@@ -1,0 +1,198 @@
+package types
+
+import (
+	"base_scan/types/orm"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/shopspring/decimal"
+	"time"
+)
+
+type BlockResult struct {
+	Height    uint64
+	Timestamp uint64
+	BlockTime time.Time
+	BnbPrice  decimal.Decimal
+	NewPairs  map[common.Address]*Pair
+	NewTokens map[common.Address]*Token
+	TxResults []*TxResult
+}
+
+func NewBlockResult(height, Timestamp uint64, bnbPrice decimal.Decimal) *BlockResult {
+	return &BlockResult{
+		Height:    height,
+		Timestamp: Timestamp,
+		BlockTime: time.Unix(int64(Timestamp), 0),
+		BnbPrice:  bnbPrice,
+		NewPairs:  make(map[common.Address]*Pair),
+		NewTokens: make(map[common.Address]*Token),
+		TxResults: make([]*TxResult, 0, 200),
+	}
+}
+
+func (br *BlockResult) AddTxResult(txResult *TxResult) {
+	br.TxResults = append(br.TxResults, txResult)
+}
+
+func (br *BlockResult) linkEvents() {
+	for _, txResult := range br.TxResults {
+		txResult.LinkEvents()
+	}
+}
+
+func (br *BlockResult) getAllEvents() []Event {
+	br.linkEvents()
+
+	events := make([]Event, 0, 500)
+	for _, txResult := range br.TxResults {
+		for _, txPairEvent := range txResult.PairAddress2TxPairEvent {
+			events = append(events, txPairEvent.V2...)
+			events = append(events, txPairEvent.V3...)
+		}
+	}
+	return events
+}
+
+func mergePoolUpdates(poolUpdates []*PoolUpdate) []*PoolUpdate {
+	pairAddress2PoolUpdate := make(map[common.Address]*PoolUpdate)
+	for _, poolUpdate := range poolUpdates {
+		poolUpdate_, ok := pairAddress2PoolUpdate[poolUpdate.Address]
+		if ok {
+			if poolUpdate.LogIndex > poolUpdate_.LogIndex {
+				pairAddress2PoolUpdate[poolUpdate.Address] = poolUpdate
+			}
+		} else {
+			pairAddress2PoolUpdate[poolUpdate.Address] = poolUpdate
+		}
+	}
+	poolUpdatesMerged := make([]*PoolUpdate, 0, len(pairAddress2PoolUpdate))
+	for _, pu := range pairAddress2PoolUpdate {
+		poolUpdatesMerged = append(poolUpdatesMerged, pu)
+	}
+	return poolUpdatesMerged
+}
+
+func mergePoolUpdateParameters(poolUpdateParameters []*PoolUpdateParameter) []*PoolUpdateParameter {
+	pairAddress2PoolUpdateParameter := make(map[common.Address]*PoolUpdateParameter)
+	for _, poolUpdateParameter := range poolUpdateParameters {
+		pairAddress2PoolUpdateParameter[poolUpdateParameter.PairAddress] = poolUpdateParameter
+	}
+	poolUpdateParametersMerged := make([]*PoolUpdateParameter, 0, len(pairAddress2PoolUpdateParameter))
+	for _, pup := range pairAddress2PoolUpdateParameter {
+		poolUpdateParametersMerged = append(poolUpdateParametersMerged, pup)
+	}
+	return poolUpdateParametersMerged
+}
+
+func (br *BlockResult) GetKafkaMessage() *EthBlock {
+	events := br.getAllEvents()
+
+	txs := make([]*orm.Tx, 0, len(events))
+	uniswapNewPairs := make([]*Pair, 0, 10) // v2 PairCreated and v3 PoolCreated
+	poolUpdates := make([]*PoolUpdate, 0, 40)
+	poolUpdateParameters := make([]*PoolUpdateParameter, 0, 40)
+	for _, event := range events {
+		if event.IsCreatePair() {
+			uniswapNewPairs = append(uniswapNewPairs, event.GetPair())
+			continue
+		}
+
+		if event.CanGetTx() {
+			txs = append(txs, event.GetTx(br.BnbPrice))
+		}
+
+		if event.CanGetPoolUpdate() {
+			poolUpdates = append(poolUpdates, event.GetPoolUpdate())
+		}
+
+		if event.CanGetPoolUpdateParameter() {
+			poolUpdateParameters = append(poolUpdateParameters, event.GetPoolUpdateParameter())
+		}
+	}
+
+	// uniswapNewPairs have more infos than br.NewPairs
+	for _, pair := range uniswapNewPairs {
+		br.NewPairs[pair.Address] = pair
+	}
+
+	ormTokens := make([]*orm.Token, 0, len(br.NewTokens))
+	for _, token := range br.NewTokens {
+		ormTokens = append(ormTokens, token.GetOrmToken())
+	}
+
+	ormPairs := make([]*orm.Pair, 0, len(uniswapNewPairs))
+	for _, pair := range br.NewPairs {
+		ormPairs = append(ormPairs, pair.GetOrmPair())
+	}
+
+	poolUpdatesMerged := mergePoolUpdates(poolUpdates)
+	poolUpdateParametersMerged := mergePoolUpdateParameters(poolUpdateParameters)
+
+	ethBlock := &EthBlock{
+		BlockNumber:          br.Height,
+		BlockUnixTimestamp:   br.Timestamp,
+		BnbPrice:             br.BnbPrice.String(),
+		Txs:                  txs,
+		NewTokens:            ormTokens,
+		NewPairs:             ormPairs,
+		PoolUpdates:          poolUpdatesMerged,
+		PoolUpdateParameters: poolUpdateParametersMerged,
+	}
+
+	return ethBlock
+}
+
+func (br *BlockResult) GetOldKafkaMessageAndNewTokensPairs() (*EthBlockOld, []*orm.Token, []*orm.Pair) {
+	events := br.getAllEvents()
+
+	txs := make([]*orm.Tx, 0, len(events))
+	uniswapNewPairs := make([]*Pair, 0, 10) // v2 PairCreated and v3 PoolCreated
+	poolUpdatesV2 := make([]*PoolUpdate, 0, 40)
+	poolUpdateParameters := make([]*PoolUpdateParameter, 0, 40)
+	for _, event := range events {
+		if event.IsCreatePair() {
+			uniswapNewPairs = append(uniswapNewPairs, event.GetPair())
+			continue
+		}
+
+		if event.CanGetTx() {
+			txs = append(txs, event.GetTx(br.BnbPrice))
+		}
+
+		if event.CanGetPoolUpdate() {
+			poolUpdatesV2 = append(poolUpdatesV2, event.GetPoolUpdate())
+		}
+
+		if event.CanGetPoolUpdateParameter() {
+			poolUpdateParameters = append(poolUpdateParameters, event.GetPoolUpdateParameter())
+		}
+	}
+
+	// uniswapNewPairs have more infos than br.NewPairs
+	for _, pair := range uniswapNewPairs {
+		br.NewPairs[pair.Address] = pair
+	}
+
+	ormTokens := make([]*orm.Token, 0, len(br.NewTokens))
+	for _, token := range br.NewTokens {
+		ormTokens = append(ormTokens, token.GetOrmToken())
+	}
+
+	ormPairs := make([]*orm.Pair, 0, len(uniswapNewPairs))
+	for _, pair := range br.NewPairs {
+		ormPairs = append(ormPairs, pair.GetOrmPair())
+	}
+
+	poolUpdatesV2Merged := mergePoolUpdates(poolUpdatesV2)
+	poolUpdateParametersMerged := mergePoolUpdateParameters(poolUpdateParameters)
+
+	ethBlock := &EthBlockOld{
+		BlockNumber:            br.Height,
+		BlockAt:                br.Timestamp,
+		BnbPrice:               br.BnbPrice.String(),
+		Txs:                    txs,
+		PoolUpdatesV2:          poolUpdatesV2Merged,
+		PoolUpdateParametersV3: poolUpdateParametersMerged,
+	}
+
+	return ethBlock, ormTokens, ormPairs
+}
