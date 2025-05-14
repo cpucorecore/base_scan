@@ -12,7 +12,7 @@ type TxPairEvent struct {
 }
 
 func (tpe *TxPairEvent) AddEvent(event Event) {
-	switch event.GetProtocolId() {
+	switch event.GetPossibleProtocolIds()[0] { // TODO fixme
 	case ProtocolIdUniswapV2:
 		if tpe.V2 == nil {
 			tpe.V2 = make([]Event, 0, 10)

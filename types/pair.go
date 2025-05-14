@@ -17,6 +17,8 @@ const (
 	FilterCodeVerifyFailed
 	FilterCodeGetFee // for v3
 	FilterCodeBaseToken
+	FilterCodeWrongFactory
+	ErrCodeParseEventInput
 )
 
 type TokenCore struct {

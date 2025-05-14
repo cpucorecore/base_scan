@@ -9,20 +9,29 @@ import (
 )
 
 type EventCommon struct {
-	Pair            *Pair
-	ContractAddress common.Address
-	BlockNumber     uint64
-	BlockTime       time.Time
-	TxHash          common.Hash
-	Maker           common.Address
-	TxIndex         uint
-	LogIndex        uint
+	Pair                *Pair
+	ContractAddress     common.Address
+	BlockNumber         uint64
+	BlockTime           time.Time
+	TxHash              common.Hash
+	Maker               common.Address
+	TxIndex             uint
+	LogIndex            uint
+	PossibleProtocolIds []int
 }
 
 var _ Event = &EventCommon{}
 
 func (e *EventCommon) GetProtocolId() int {
-	return 0
+	return e.Pair.ProtocolId
+}
+
+func (e *EventCommon) GetPossibleProtocolIds() []int {
+	return e.PossibleProtocolIds
+}
+
+func (e *EventCommon) SetPossibleProtocolIds(possibleProtocolIds []int) {
+	e.PossibleProtocolIds = possibleProtocolIds
 }
 
 func (e *EventCommon) CanGetPair() bool {

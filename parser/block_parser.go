@@ -193,7 +193,7 @@ func (p *blockParser) getPairByEvent(event types.Event) *types.PairWrap {
 		return p.pairService.GetTokens(pair)
 	}
 
-	return p.pairService.GetPairAndTokens(event.GetPairAddress(), event.GetProtocolId())
+	return p.pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
 }
 
 func (p *blockParser) commitBlockResult(blockResult *types.BlockResult) {

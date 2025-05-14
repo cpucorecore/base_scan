@@ -7,7 +7,7 @@ import (
 )
 
 type PoolUpdate struct {
-	Program       string
+	Program       string // TODO remove
 	LogIndex      uint
 	Address       common.Address
 	Token0Address common.Address

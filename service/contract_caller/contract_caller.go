@@ -165,14 +165,10 @@ func (c *ContractCaller) CallToken1(address *common.Address) (common.Address, er
 }
 
 /*
-CallFee
-for v3
+CallGetPair
+for uniswap/pancake v2
 */
-func (c *ContractCaller) CallFee(address *common.Address) (*big.Int, error) {
-	return c.queryBigInt(address, "fee")
-}
-
-func (c *ContractCaller) CallGetPairV2(token0Address, token1Address *common.Address) (common.Address, error) {
+func (c *ContractCaller) CallGetPair(token0Address, token1Address *common.Address) (common.Address, error) {
 	req := types.BuildCallContractReqDynamic(nil, &v2.FactoryAddress, v2.FactoryAbi, "getPair", token0Address, token1Address)
 
 	bytes, err := c.CallContract(req)
@@ -196,31 +192,19 @@ func (c *ContractCaller) CallGetPairV2(token0Address, token1Address *common.Addr
 	return ParseAddress(values[0])
 }
 
-func (c *ContractCaller) CallIsPool(poolAddress *common.Address) (bool, error) { // for aero
-	req := types.BuildCallContractReqDynamic(nil, &aerodrome.FactoryAddress, aerodrome.FactoryAbi, "isPool", poolAddress) // TODO check "getPool" and "getPair"
-
-	bytes, err := c.CallContract(req)
-	if err != nil {
-		return false, err
-	}
-
-	if len(bytes) == 0 {
-		return false, ErrOutputEmpty
-	}
-
-	values, unpackErr := AerodromeV2FactoryUnpacker.Unpack("isPool", bytes, 1)
-	if unpackErr != nil {
-		return false, unpackErr
-	}
-
-	if len(values) != 1 {
-		return false, ErrWrongOutputLength
-	}
-
-	return ParseBool(values[0])
+/*
+CallFee
+for uniswap/pancake v3
+*/
+func (c *ContractCaller) CallFee(address *common.Address) (*big.Int, error) {
+	return c.queryBigInt(address, "fee")
 }
 
-func (c *ContractCaller) CallGetPairV3(token0Address, token1Address *common.Address, fee *big.Int) (common.Address, error) {
+/*
+CallGetPool
+for uniswap/pancake v3
+*/
+func (c *ContractCaller) CallGetPool(token0Address, token1Address *common.Address, fee *big.Int) (common.Address, error) {
 	req := types.BuildCallContractReqDynamic(nil, &v3.FactoryAddress, v3.FactoryAbi, "getPool", token0Address, token1Address, fee)
 
 	bytes, err := c.CallContract(req)
@@ -244,6 +228,38 @@ func (c *ContractCaller) CallGetPairV3(token0Address, token1Address *common.Addr
 	return ParseAddress(values[0])
 }
 
+/*
+CallIsPool
+for aerodrome
+*/
+func (c *ContractCaller) CallIsPool(poolAddress *common.Address) (bool, error) {
+	req := types.BuildCallContractReqDynamic(nil, &aerodrome.FactoryAddress, aerodrome.FactoryAbi, "isPool", poolAddress)
+
+	bytes, err := c.CallContract(req)
+	if err != nil {
+		return false, err
+	}
+
+	if len(bytes) == 0 {
+		return false, ErrOutputEmpty
+	}
+
+	values, unpackErr := AerodromeV2FactoryUnpacker.Unpack("isPool", bytes, 1)
+	if unpackErr != nil {
+		return false, unpackErr
+	}
+
+	if len(values) != 1 {
+		return false, ErrWrongOutputLength
+	}
+
+	return ParseBool(values[0])
+}
+
+/*
+callGetReserves
+for uniswap v2
+*/
 func (c *ContractCaller) callGetReserves(blockNumber *big.Int) ([]interface{}, error) {
 	req := types.BuildCallContractReqDynamic(blockNumber, &types.WETHUSDCPairAddressUniswapV2, v2.PairAbi, "getReserves")
 

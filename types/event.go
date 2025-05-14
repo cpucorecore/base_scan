@@ -9,6 +9,7 @@ import (
 
 type Event interface {
 	GetProtocolId() int
+	GetPossibleProtocolIds() []int
 	CanGetPair() bool
 	GetPair() *Pair
 	GetPairAddress() common.Address

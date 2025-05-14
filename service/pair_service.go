@@ -1,16 +1,12 @@
 package service
 
 import (
-	aerodrome "base_scan/abi/aerodrome"
-	uniswapv2 "base_scan/abi/uniswap/v2"
-	uniswapv3 "base_scan/abi/uniswap/v3"
 	"base_scan/cache"
 	"base_scan/log"
 	"base_scan/metrics"
 	"base_scan/service/contract_caller"
 	"base_scan/types"
 	"context"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
@@ -18,27 +14,10 @@ import (
 	"time"
 )
 
-var (
-	protocolIdToPoolFactory = map[int]struct {
-		PoolFactoryAddress *common.Address
-		Abi                *abi.ABI
-	}{
-		types.ProtocolIdUniswapV2: {
-			&uniswapv2.FactoryAddress,
-			uniswapv2.FactoryAbi},
-		types.ProtocolIdUniswapV3: {
-			&uniswapv3.FactoryAddress,
-			uniswapv3.FactoryAbi},
-		types.ProtocolIdAerodrome: {
-			&aerodrome.FactoryAddress,
-			aerodrome.FactoryAbi},
-	}
-)
-
 type PairService interface {
 	SetPair(pair *types.Pair)
 	GetTokens(pair *types.Pair) *types.PairWrap
-	GetPairAndTokens(address common.Address, protocolId int) *types.PairWrap
+	GetPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap
 }
 
 type pairService struct {
@@ -157,9 +136,9 @@ func (s *pairService) GetTokens(pair *types.Pair) *types.PairWrap {
 	return pairWrap
 }
 
-func (s *pairService) getPairAndTokens(address common.Address, protocolId int) *types.PairWrap {
+func (s *pairService) getPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap {
 	doResult, _, _ := s.group.Do(address.String(), func() (interface{}, error) {
-		pair := s.getPair(address, protocolId)
+		pair := s.getPair(address)
 		if pair.Filtered {
 			s.SetPair(pair)
 			return &types.PairWrap{
@@ -169,13 +148,24 @@ func (s *pairService) getPairAndTokens(address common.Address, protocolId int) *
 				NewToken1: false,
 			}, nil
 		}
+
+		if !s.verifyPair(pair, protocolIds) {
+			s.SetPair(pair)
+			return &types.PairWrap{
+				Pair:      pair,
+				NewPair:   false,
+				NewToken0: false,
+				NewToken1: false,
+			}, nil
+		}
+
 		return s.GetTokens(pair), nil
 	})
 
 	return doResult.(*types.PairWrap)
 }
 
-func (s *pairService) GetPairAndTokens(address common.Address, protocolId int) *types.PairWrap {
+func (s *pairService) GetPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap {
 	cachePair, ok := s.cache.GetPair(address)
 	if ok {
 		return &types.PairWrap{
@@ -183,20 +173,90 @@ func (s *pairService) GetPairAndTokens(address common.Address, protocolId int) *
 		}
 	}
 
-	pairWrap := s.getPairAndTokens(address, protocolId)
+	pairWrap := s.getPairAndTokens(address, protocolIds)
 	return pairWrap
 }
 
-func (s *pairService) getPair(pairAddress common.Address, protocolId int) *types.Pair {
-	switch protocolId {
-	case types.ProtocolIdUniswapV2, types.ProtocolIdAerodrome:
-		return s.getPairV2(protocolId, pairAddress)
-	case types.ProtocolIdUniswapV3:
-		return s.getPairV3(pairAddress)
-	default:
-		log.Logger.Fatal("getPair err, wrong protocolId", zap.Int("protocolId", protocolId), zap.String("address", pairAddress.String()))
-		return nil
+func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
+	pair := &types.Pair{
+		Address: pairAddress,
 	}
+
+	token0Address, err0 := s.contractCaller.CallToken0(&pairAddress)
+	if err0 != nil {
+		log.Logger.Error("CallToken0 err, this pair will filtered", zap.Error(err0), zap.String("address", pairAddress.String()))
+		pair.Filtered = true
+		pair.FilterCode = types.FilterCodeGetToken0
+		return pair
+	}
+
+	pair.Token0Core = &types.TokenCore{
+		Address: token0Address,
+	}
+
+	token1Address, err1 := s.contractCaller.CallToken1(&pairAddress)
+	if err1 != nil {
+		log.Logger.Error("CallToken1 err, this pair will filtered", zap.Error(err1), zap.String("address", pairAddress.String()))
+		pair.Filtered = true
+		pair.FilterCode = types.FilterCodeGetToken1
+		return pair
+	}
+
+	pair.Token1Core = &types.TokenCore{
+		Address: token1Address,
+	}
+
+	pair.FilterByToken0AndToken1()
+
+	return pair
+}
+
+func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
+	for _, protocolId := range protocolIds {
+		switch protocolId {
+		case types.ProtocolIdUniswapV2, types.ProtocolIdPancakeV2:
+			pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&pair.Token0Core.Address, &pair.Token1Core.Address)
+			if getPairErr != nil {
+				continue
+			}
+
+			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+				pair.ProtocolId = protocolId
+				return true
+			}
+
+		case types.ProtocolIdUniswapV3, types.ProtocolIdPancakeV3:
+			fee, callFeeErr := s.contractCaller.CallFee(&pair.Address)
+			if callFeeErr != nil {
+				continue
+			}
+
+			pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&pair.Token0Core.Address, &pair.Token1Core.Address, fee)
+			if getPairErr != nil {
+				continue
+			}
+
+			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+				pair.ProtocolId = protocolId
+				return true
+			}
+
+		case types.ProtocolIdAerodrome:
+			isPool, isPoolErr := s.contractCaller.CallIsPool(&pair.Address)
+			if isPoolErr != nil {
+				continue
+			}
+
+			if isPool {
+				pair.ProtocolId = protocolId
+				return true
+			}
+		}
+	}
+
+	pair.Filtered = true
+	pair.FilterCode = types.FilterCodeVerifyFailed
+	return false
 }
 
 func (s *pairService) getPairV2(protocolId int, pairAddress common.Address) *types.Pair {
@@ -237,7 +297,7 @@ func (s *pairService) getPairV2(protocolId int, pairAddress common.Address) *typ
 
 	isPool, getPairErr := s.contractCaller.CallIsPool(&pairAddress)
 	if getPairErr != nil {
-		log.Logger.Error("CallGetPairV2 err, this pair will filtered", zap.Error(getPairErr), zap.String("address", pairAddress.String()))
+		log.Logger.Error("CallGetPair err, this pair will filtered", zap.Error(getPairErr), zap.String("address", pairAddress.String()))
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetPair
 		return pair
@@ -297,9 +357,9 @@ func (s *pairService) getPairV3(pairAddress common.Address) *types.Pair {
 		return pair
 	}
 
-	pairAddressQueried, getPairErr := s.contractCaller.CallGetPairV3(&token0Address, &token1Address, fee)
+	pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&token0Address, &token1Address, fee)
 	if getPairErr != nil {
-		log.Logger.Error("CallGetPairV3 err, this pair will filtered", zap.Error(getPairErr), zap.String("address", pairAddress.String()))
+		log.Logger.Error("CallGetPool err, this pair will filtered", zap.Error(getPairErr), zap.String("address", pairAddress.String()))
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetPair
 		return pair

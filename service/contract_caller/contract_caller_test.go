@@ -81,7 +81,7 @@ func TestParsePairPancakeV2(t *testing.T) {
 		}
 		require.Equal(t, test.expectedToken1, token1)
 
-		pairAddress, callErr := cc.CallGetPairV2(&token0, &token1)
+		pairAddress, callErr := cc.CallGetPair(&token0, &token1)
 		if callErr != nil {
 			require.Nil(t, callErr)
 		}
@@ -129,7 +129,7 @@ func TestParsePairPancakeV3(t *testing.T) {
 		}
 		require.Equal(t, test.fee, fee)
 
-		pairAddress, callErr := cc.CallGetPairV3(&token0, &token1, big.NewInt(2500))
+		pairAddress, callErr := cc.CallGetPool(&token0, &token1, big.NewInt(2500))
 		if callErr != nil {
 			require.Nil(t, callErr)
 		}

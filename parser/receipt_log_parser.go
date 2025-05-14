@@ -1,9 +1,9 @@
 package parser
 
 import (
-	"base_scan/parser/protocol/event_input_parser"
-	"base_scan/parser/protocol/uniswap_v2"
-	"base_scan/parser/protocol/uniswap_v3"
+	"base_scan/parser/protocol2/event_input_parser"
+	"base_scan/parser/protocol2/uniswap_v2"
+	"base_scan/parser/protocol2/uniswap_v3"
 	"base_scan/types"
 	"errors"
 	"github.com/ethereum/go-ethereum/common"
