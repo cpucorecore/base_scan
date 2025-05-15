@@ -55,7 +55,7 @@ func init() {
 	mapTopicToProtocolId(pancakev3.MintTopic0, types.ProtocolIdPancakeV3)
 	mapTopicToProtocolId(pancakev3.BurnTopic0, types.ProtocolIdPancakeV3)
 
-	mapTopicToProtocolId(aerodrome.PairCreatedTopic0, types.ProtocolIdAerodrome)
+	mapTopicToProtocolId(aerodrome.PoolCreatedTopic0, types.ProtocolIdAerodrome)
 	mapTopicToProtocolId(aerodrome.SwapTopic0, types.ProtocolIdAerodrome)
 	mapTopicToProtocolId(aerodrome.SyncTopic0, types.ProtocolIdAerodrome)
 	mapTopicToProtocolId(aerodrome.BurnTopic0, types.ProtocolIdAerodrome)
@@ -71,5 +71,5 @@ func init() {
 	mapTopicToFactoryAddress(uniswapv3.PoolCreatedTopic0, uniswapv3.FactoryAddress)
 	mapTopicToFactoryAddress(pancakev2.PairCreatedTopic0, pancakev2.FactoryAddress)
 	mapTopicToFactoryAddress(pancakev3.PoolCreatedTopic0, pancakev3.FactoryAddress)
-	mapTopicToFactoryAddress(aerodrome.PairCreatedTopic0, aerodrome.FactoryAddress)
+	mapTopicToFactoryAddress(aerodrome.PoolCreatedTopic0, aerodrome.FactoryAddress)
 }

@@ -22,6 +22,18 @@ var (
 		},
 	}
 
+	poolCreatedEventParserAerodrome = &PairCreatedEventParser{
+		FactoryEventParser: FactoryEventParser{
+			Topic:                    aerodrome.PoolCreatedTopic0,
+			PossibleFactoryAddresses: abi.Topic2FactoryAddresses[aerodrome.PoolCreatedTopic0],
+			EventInputParser: event_input_parser.EventInputParser{
+				TopicLen:      4,
+				DataUnpackLen: 2,
+				AbiEvent:      aerodrome.PoolCreatedEvent,
+			},
+		},
+	}
+
 	burnEventParser = &BurnEventParser{
 		PoolEventParser: PoolEventParser{
 			Topic:               uniswapv2.BurnTopic0,
@@ -52,8 +64,20 @@ var (
 			PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv2.SwapTopic0],
 			EventInputParser: event_input_parser.EventInputParser{
 				TopicLen:      3,
-				DataUnpackLen: 5,
+				DataUnpackLen: 4,
 				AbiEvent:      uniswapv2.SwapEvent,
+			},
+		},
+	}
+
+	swapEventParserAerodrome = &SwapEventParser{
+		PoolEventParser: PoolEventParser{
+			Topic:               aerodrome.SwapTopic0,
+			PossibleProtocolIds: abi.Topic2ProtocolIds[aerodrome.SwapTopic0],
+			EventInputParser: event_input_parser.EventInputParser{
+				TopicLen:      3,
+				DataUnpackLen: 4,
+				AbiEvent:      aerodrome.SwapEvent,
 			},
 		},
 	}
@@ -146,9 +170,9 @@ var (
 			},
 		},
 
-		aerodrome.PairCreatedTopic0: pairCreatedEventParser,
+		aerodrome.PoolCreatedTopic0: poolCreatedEventParserAerodrome,
 		aerodrome.BurnTopic0:        burnEventParserAerodrome,
-		aerodrome.SwapTopic0:        swapEventParser,
+		aerodrome.SwapTopic0:        swapEventParserAerodrome,
 		aerodrome.SyncTopic0:        syncEventParserAerodrome,
 	}
 )
