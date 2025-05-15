@@ -1,7 +1,7 @@
 package event
 
 import (
-	"base_scan/parser/protocol2"
+	"base_scan/parser/event_parser/common"
 	"base_scan/types"
 	"base_scan/types/orm"
 	"github.com/shopspring/decimal"
@@ -32,17 +32,17 @@ func (e *SwapEventV3) GetTx(bnbPrice decimal.Decimal) *orm.Tx {
 		Program:       types.GetProtocolName(e.Pair.ProtocolId),
 	}
 
-	tx.Token0Amount, tx.Token1Amount = protocol2.ParseAmountsByPair(e.Amount0Wei, e.Amount1Wei, e.Pair)
+	tx.Token0Amount, tx.Token1Amount = common.ParseAmountsByPair(e.Amount0Wei, e.Amount1Wei, e.Pair)
 	if tx.Token0Amount.IsNegative() {
-		tx.Event = protocol2.EventNameBuy
+		tx.Event = common.EventNameBuy
 		tx.Token0Amount = tx.Token0Amount.Neg()
 	} else if tx.Token1Amount.IsNegative() {
-		tx.Event = protocol2.EventNameSell
+		tx.Event = common.EventNameSell
 		tx.Token1Amount = tx.Token1Amount.Neg()
 	} else {
 	}
 
-	tx.AmountUsd, tx.PriceUsd = protocol2.CalcAmountAndPrice(bnbPrice, tx.Token0Amount, tx.Token1Amount, e.Pair.Token1Core.Address)
+	tx.AmountUsd, tx.PriceUsd = common.CalcAmountAndPrice(bnbPrice, tx.Token0Amount, tx.Token1Amount, e.Pair.Token1Core.Address)
 	return tx
 }
 

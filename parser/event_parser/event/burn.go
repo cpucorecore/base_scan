@@ -1,7 +1,7 @@
 package event
 
 import (
-	"base_scan/parser/protocol2"
+	"base_scan/parser/event_parser/common"
 	"base_scan/types"
 	"base_scan/types/orm"
 	"github.com/shopspring/decimal"
@@ -21,7 +21,7 @@ func (e *BurnEvent) CanGetTx() bool {
 func (e *BurnEvent) GetTx(bnbPrice decimal.Decimal) *orm.Tx {
 	tx := &orm.Tx{
 		TxHash:        e.TxHash.String(),
-		Event:         protocol2.EventNameRemove,
+		Event:         common.EventNameRemove,
 		Maker:         e.Maker.String(),
 		Token0Address: e.Pair.Token0Core.Address.String(),
 		Token1Address: e.Pair.Token1Core.Address.String(),
@@ -33,8 +33,8 @@ func (e *BurnEvent) GetTx(bnbPrice decimal.Decimal) *orm.Tx {
 		Program:       types.GetProtocolName(e.Pair.ProtocolId),
 	}
 
-	tx.Token0Amount, tx.Token1Amount = protocol2.ParseAmountsByPair(e.Amount0Wei, e.Amount1Wei, e.Pair)
-	tx.AmountUsd, tx.PriceUsd = protocol2.CalcAmountAndPrice(bnbPrice, tx.Token0Amount, tx.Token1Amount, e.Pair.Token1Core.Address)
+	tx.Token0Amount, tx.Token1Amount = common.ParseAmountsByPair(e.Amount0Wei, e.Amount1Wei, e.Pair)
+	tx.AmountUsd, tx.PriceUsd = common.CalcAmountAndPrice(bnbPrice, tx.Token0Amount, tx.Token1Amount, e.Pair.Token1Core.Address)
 	return tx
 }
 
