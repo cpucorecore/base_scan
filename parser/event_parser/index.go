@@ -70,6 +70,18 @@ var (
 		},
 	}
 
+	syncEventParserAerodrome = &SyncEventParser{
+		PoolEventParser: PoolEventParser{
+			Topic:               aerodrome.SyncTopic0,
+			PossibleProtocolIds: abi.Topic2ProtocolIds[aerodrome.SyncTopic0],
+			EventInputParser: event_input_parser.EventInputParser{
+				TopicLen:      1,
+				DataUnpackLen: 2,
+				AbiEvent:      aerodrome.SyncEvent,
+			},
+		},
+	}
+
 	mintEventParser = &MintEventParser{
 		PoolEventParser: PoolEventParser{
 			Topic:               uniswapv2.MintTopic0,
@@ -137,6 +149,6 @@ var (
 		aerodrome.PairCreatedTopic0: pairCreatedEventParser,
 		aerodrome.BurnTopic0:        burnEventParserAerodrome,
 		aerodrome.SwapTopic0:        swapEventParser,
-		aerodrome.SyncTopic0:        syncEventParser,
+		aerodrome.SyncTopic0:        syncEventParserAerodrome,
 	}
 )
