@@ -42,29 +42,30 @@ func (s *pairService) SetPair(pair *types.Pair) {
 	s.cache.SetPair(pair)
 }
 
-func (s *pairService) getToken(address common.Address) (*types.Token, error) {
+func (s *pairService) getToken(tokenAddress common.Address) (*types.Token, error) {
+	// TODO parallelize contract call
 	token := &types.Token{
-		Address: address,
+		Address: tokenAddress,
 	}
 
-	name, callNameErr := s.contractCaller.CallName(&address)
+	name, callNameErr := s.contractCaller.CallName(&tokenAddress)
 	if callNameErr == nil {
 		token.Name = name
 	}
 
-	symbol, callSymbolErr := s.contractCaller.CallSymbol(&address)
+	symbol, callSymbolErr := s.contractCaller.CallSymbol(&tokenAddress)
 	if callSymbolErr == nil {
 		token.Symbol = symbol
 	}
 
-	decimals, callDecimalsErr := s.contractCaller.CallDecimals(&address)
+	decimals, callDecimalsErr := s.contractCaller.CallDecimals(&tokenAddress)
 	if callDecimalsErr != nil {
 		token.Filtered = true
 		return token, callDecimalsErr
 	}
 	token.Decimals = (int8)(decimals)
 
-	totalSupply, callTotalSupplyErr := s.contractCaller.CallTotalSupply(&address)
+	totalSupply, callTotalSupplyErr := s.contractCaller.CallTotalSupply(&tokenAddress)
 	if callTotalSupplyErr == nil {
 		token.TotalSupply = decimal.NewFromBigInt(totalSupply, -(int32)(token.Decimals))
 	}
@@ -72,14 +73,14 @@ func (s *pairService) getToken(address common.Address) (*types.Token, error) {
 	return token, nil
 }
 
-func (s *pairService) GetToken(address common.Address) (*types.Token, error, bool) {
-	cacheToken, ok := s.cache.GetToken(address)
+func (s *pairService) GetToken(tokenAddress common.Address) (*types.Token, error, bool) {
+	cacheToken, ok := s.cache.GetToken(tokenAddress)
 	if ok {
 		return cacheToken, nil, true
 	}
 
 	now := time.Now()
-	token, err := s.getToken(address)
+	token, err := s.getToken(tokenAddress)
 	if err != nil {
 		s.cache.SetToken(token)
 		return nil, err, false

@@ -76,7 +76,7 @@ func main() {
 
 	blockHandlerSequencer := sequencer.NewBlockSequencer()
 
-	receiptLogParser := parser.NewReceiptLogParser()
+	topicRouter := parser.NewTopicRouter()
 	kafkaSender := service.NewKafkaSender(config.G.Kafka)
 
 	txDb, txDbErr := gorm.Open(postgres.Open(config.G.DbTx.GetDsn()))
@@ -97,7 +97,7 @@ func main() {
 		blockHandlerSequencer,
 		priceService,
 		pairService,
-		receiptLogParser,
+		topicRouter,
 		kafkaSender,
 		dbService,
 		config.G.Kafka.On,

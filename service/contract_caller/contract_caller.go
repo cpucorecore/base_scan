@@ -31,6 +31,7 @@ type ContractCaller struct {
 	ctx         context.Context
 	ethClient   *ethclient.Client
 	RetryParams *config.RetryParams
+	// TODO thread pool
 }
 
 func NewContractCaller(ethClient *ethclient.Client, RetryParams *config.RetryParams) *ContractCaller {

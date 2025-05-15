@@ -24,17 +24,17 @@ type BlockParser interface {
 }
 
 type blockParser struct {
-	inputQueue       chan *types.BlockContext
-	workPool         *ants.Pool
-	cache            cache.BlockCache
-	sequencer        sequencer.BlockSequencer
-	outputQueue      chan *types.BlockContext
-	priceService     service.PriceService
-	pairService      service.PairService
-	receiptLogParser ReceiptLogParser
-	kafkaSender      service.KafkaSender
-	dbService        service.DBService
-	kafkaOn          bool
+	inputQueue   chan *types.BlockContext
+	workPool     *ants.Pool
+	cache        cache.BlockCache
+	sequencer    sequencer.BlockSequencer
+	outputQueue  chan *types.BlockContext
+	priceService service.PriceService
+	pairService  service.PairService
+	topicRouter  TopicRouter
+	kafkaSender  service.KafkaSender
+	dbService    service.DBService
+	kafkaOn      bool
 }
 
 func NewBlockParser(
@@ -42,7 +42,7 @@ func NewBlockParser(
 	sequencer sequencer.BlockSequencer,
 	priceService service.PriceService,
 	pairService service.PairService,
-	receiptLogParser ReceiptLogParser,
+	topicRouter TopicRouter,
 	kafkaSender service.KafkaSender,
 	dbService service.DBService,
 	kafkaOn bool,
@@ -53,17 +53,17 @@ func NewBlockParser(
 	}
 
 	return &blockParser{
-		inputQueue:       make(chan *types.BlockContext, config.G.BlockHandler.QueueSize),
-		workPool:         workPool,
-		cache:            cache,
-		sequencer:        sequencer,
-		outputQueue:      make(chan *types.BlockContext, config.G.BlockHandler.QueueSize),
-		priceService:     priceService,
-		pairService:      pairService,
-		receiptLogParser: receiptLogParser,
-		kafkaSender:      kafkaSender,
-		dbService:        dbService,
-		kafkaOn:          kafkaOn,
+		inputQueue:   make(chan *types.BlockContext, config.G.BlockHandler.QueueSize),
+		workPool:     workPool,
+		cache:        cache,
+		sequencer:    sequencer,
+		outputQueue:  make(chan *types.BlockContext, config.G.BlockHandler.QueueSize),
+		priceService: priceService,
+		pairService:  pairService,
+		topicRouter:  topicRouter,
+		kafkaSender:  kafkaSender,
+		dbService:    dbService,
+		kafkaOn:      kafkaOn,
 	}
 }
 
@@ -155,7 +155,7 @@ func (p *blockParser) parseBlock(blockCtx *types.BlockContext) {
 				continue
 			}
 
-			event, parseErr := p.receiptLogParser.Parse(receiptLog)
+			event, parseErr := p.topicRouter.Parse(receiptLog)
 			if parseErr != nil {
 				continue
 			}
