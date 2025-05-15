@@ -169,8 +169,8 @@ func (c *ContractCaller) CallToken1(address *common.Address) (common.Address, er
 CallGetPair
 for uniswap/pancake v2
 */
-func (c *ContractCaller) CallGetPair(token0Address, token1Address *common.Address) (common.Address, error) {
-	req := types.BuildCallContractReqDynamic(nil, &v2.FactoryAddress, v2.FactoryAbi, "getPair", token0Address, token1Address)
+func (c *ContractCaller) CallGetPair(factoryAddress, token0Address, token1Address *common.Address) (common.Address, error) {
+	req := types.BuildCallContractReqDynamic(nil, factoryAddress, v2.FactoryAbi, "getPair", token0Address, token1Address)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {

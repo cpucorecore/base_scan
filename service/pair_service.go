@@ -1,6 +1,8 @@
 package service
 
 import (
+	pancakev2 "base_scan/abi/pancake/v2"
+	uniswapv2 "base_scan/abi/uniswap/v2"
 	"base_scan/cache"
 	"base_scan/log"
 	"base_scan/metrics"
@@ -18,6 +20,7 @@ type PairService interface {
 	SetPair(pair *types.Pair)
 	GetTokens(pair *types.Pair) *types.PairWrap
 	GetPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap
+	GetTokenDecimal(tokenAddress common.Address) (int8, error)
 }
 
 type pairService struct {
@@ -215,8 +218,19 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
 	for _, protocolId := range protocolIds {
 		switch protocolId {
-		case types.ProtocolIdUniswapV2, types.ProtocolIdPancakeV2:
-			pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&pair.Token0Core.Address, &pair.Token1Core.Address)
+		case types.ProtocolIdUniswapV2:
+			pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&uniswapv2.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address)
+			if getPairErr != nil {
+				continue
+			}
+
+			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+				pair.ProtocolId = protocolId
+				return true
+			}
+
+		case types.ProtocolIdPancakeV2:
+			pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&pancakev2.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address)
 			if getPairErr != nil {
 				continue
 			}
@@ -374,4 +388,13 @@ func (s *pairService) getPairV3(pairAddress common.Address) *types.Pair {
 
 	metrics.GetV3PairDuration.Observe(time.Since(now).Seconds())
 	return pair
+}
+
+func (s *pairService) GetTokenDecimal(tokenAddress common.Address) (int8, error) {
+	token, err := s.getToken(tokenAddress)
+	if err != nil {
+		return 0, err
+	}
+
+	return token.Decimals, nil
 }
