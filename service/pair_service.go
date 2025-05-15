@@ -2,7 +2,9 @@ package service
 
 import (
 	pancakev2 "base_scan/abi/pancake/v2"
+	pancakev3 "base_scan/abi/pancake/v3"
 	uniswapv2 "base_scan/abi/uniswap/v2"
+	uniswapv3 "base_scan/abi/uniswap/v3"
 	"base_scan/cache"
 	"base_scan/log"
 	"base_scan/metrics"
@@ -20,7 +22,6 @@ type PairService interface {
 	SetPair(pair *types.Pair)
 	GetTokens(pair *types.Pair) *types.PairWrap
 	GetPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap
-	GetTokenDecimal(tokenAddress common.Address) (int8, error)
 }
 
 type pairService struct {
@@ -240,13 +241,29 @@ func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
 				return true
 			}
 
-		case types.ProtocolIdUniswapV3, types.ProtocolIdPancakeV3:
+		case types.ProtocolIdUniswapV3:
 			fee, callFeeErr := s.contractCaller.CallFee(&pair.Address)
 			if callFeeErr != nil {
 				continue
 			}
 
-			pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&pair.Token0Core.Address, &pair.Token1Core.Address, fee)
+			pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&uniswapv3.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address, fee)
+			if getPairErr != nil {
+				continue
+			}
+
+			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+				pair.ProtocolId = protocolId
+				return true
+			}
+
+		case types.ProtocolIdPancakeV3:
+			fee, callFeeErr := s.contractCaller.CallFee(&pair.Address)
+			if callFeeErr != nil {
+				continue
+			}
+
+			pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&pancakev3.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address, fee)
 			if getPairErr != nil {
 				continue
 			}
@@ -326,75 +343,4 @@ func (s *pairService) getPairV2(protocolId int, pairAddress common.Address) *typ
 
 	metrics.GetV2PairDuration.Observe(time.Since(now).Seconds())
 	return pair
-}
-
-func (s *pairService) getPairV3(pairAddress common.Address) *types.Pair {
-	now := time.Now()
-
-	pair := &types.Pair{
-		ProtocolId: types.ProtocolIdUniswapV3,
-		Address:    pairAddress,
-	}
-
-	token0Address, err0 := s.contractCaller.CallToken0(&pairAddress)
-	if err0 != nil {
-		log.Logger.Error("CallToken0 err, this pair will filtered", zap.Error(err0), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetToken0
-		return pair
-	}
-
-	pair.Token0Core = &types.TokenCore{
-		Address: token0Address,
-	}
-
-	token1Address, err1 := s.contractCaller.CallToken1(&pairAddress)
-	if err1 != nil {
-		log.Logger.Error("CallToken1 err, this pair will filtered", zap.Error(err1), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetToken1
-		return pair
-	}
-
-	pair.Token1Core = &types.TokenCore{
-		Address: token1Address,
-	}
-
-	if pair.FilterByToken0AndToken1() {
-		return pair
-	}
-
-	fee, callFeeErr := s.contractCaller.CallFee(&pairAddress)
-	if callFeeErr != nil {
-		log.Logger.Error("CallFee err, this pair will filtered", zap.Error(callFeeErr), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetFee
-		return pair
-	}
-
-	pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&token0Address, &token1Address, fee)
-	if getPairErr != nil {
-		log.Logger.Error("CallGetPool err, this pair will filtered", zap.Error(getPairErr), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetPair
-		return pair
-	}
-
-	if pairAddressQueried.Cmp(pairAddress) != 0 {
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeVerifyFailed
-		return pair
-	}
-
-	metrics.GetV3PairDuration.Observe(time.Since(now).Seconds())
-	return pair
-}
-
-func (s *pairService) GetTokenDecimal(tokenAddress common.Address) (int8, error) {
-	token, err := s.getToken(tokenAddress)
-	if err != nil {
-		return 0, err
-	}
-
-	return token.Decimals, nil
 }

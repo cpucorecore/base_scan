@@ -205,8 +205,8 @@ func (c *ContractCaller) CallFee(address *common.Address) (*big.Int, error) {
 CallGetPool
 for uniswap/pancake v3
 */
-func (c *ContractCaller) CallGetPool(token0Address, token1Address *common.Address, fee *big.Int) (common.Address, error) {
-	req := types.BuildCallContractReqDynamic(nil, &v3.FactoryAddress, v3.FactoryAbi, "getPool", token0Address, token1Address, fee)
+func (c *ContractCaller) CallGetPool(factoryAddress, token0Address, token1Address *common.Address, fee *big.Int) (common.Address, error) {
+	req := types.BuildCallContractReqDynamic(nil, factoryAddress, v3.FactoryAbi, "getPool", token0Address, token1Address, fee)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
