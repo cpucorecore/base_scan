@@ -3,6 +3,7 @@ package event_parser
 import (
 	"base_scan/abi"
 	"base_scan/abi/aerodrome"
+	pancakev3 "base_scan/abi/pancake/v3"
 	uniswapv2 "base_scan/abi/uniswap/v2"
 	uniswapv3 "base_scan/abi/uniswap/v3"
 	"base_scan/parser/event_parser/event_input_parser"
@@ -147,7 +148,7 @@ var (
 				},
 			},
 		},
-		uniswapv3.BurnTopic0: &BurnEventParser{
+		uniswapv3.BurnTopic0: &BurnEventParserV3{
 			PoolEventParser: PoolEventParser{
 				Topic:               uniswapv3.BurnTopic0,
 				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.BurnTopic0],
@@ -158,7 +159,7 @@ var (
 				},
 			},
 		},
-		uniswapv3.SwapTopic0: &SwapEventParser{
+		uniswapv3.SwapTopic0: &SwapEventParserV3{
 			PoolEventParser: PoolEventParser{
 				Topic:               uniswapv3.SwapTopic0,
 				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.SwapTopic0],
@@ -166,6 +167,18 @@ var (
 					TopicLen:      3,
 					DataUnpackLen: 5,
 					AbiEvent:      uniswapv3.SwapEvent,
+				},
+			},
+		},
+
+		pancakev3.SwapTopic0: &SwapEventParserV3{
+			PoolEventParser: PoolEventParser{
+				Topic:               pancakev3.SwapTopic0,
+				PossibleProtocolIds: abi.Topic2ProtocolIds[pancakev3.SwapTopic0],
+				EventInputParser: event_input_parser.EventInputParser{
+					TopicLen:      3,
+					DataUnpackLen: 7,
+					AbiEvent:      pancakev3.SwapEvent,
 				},
 			},
 		},
