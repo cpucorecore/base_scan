@@ -34,6 +34,18 @@ var (
 		},
 	}
 
+	burnEventParserAerodrome = &BurnEventParser{
+		PoolEventParser: PoolEventParser{
+			Topic:               aerodrome.BurnTopic0,
+			PossibleProtocolIds: abi.Topic2ProtocolIds[aerodrome.BurnTopic0],
+			EventInputParser: event_input_parser.EventInputParser{
+				TopicLen:      3,
+				DataUnpackLen: 2,
+				AbiEvent:      aerodrome.BurnEvent,
+			},
+		},
+	}
+
 	swapEventParser = &SwapEventParser{
 		PoolEventParser: PoolEventParser{
 			Topic:               uniswapv2.SwapTopic0,
@@ -58,44 +70,25 @@ var (
 		},
 	}
 
+	mintEventParser = &MintEventParser{
+		PoolEventParser: PoolEventParser{
+			Topic:               uniswapv2.MintTopic0,
+			PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv2.MintTopic0],
+			EventInputParser: event_input_parser.EventInputParser{
+				TopicLen:      2,
+				DataUnpackLen: 2,
+				AbiEvent:      uniswapv2.MintEvent,
+			},
+		},
+	}
+
 	Topic2EventParser = map[common.Hash]EventParser{
-		uniswapv3.BurnTopic0: &BurnEventParser{
-			PoolEventParser: PoolEventParser{
-				Topic:               uniswapv3.BurnTopic0,
-				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.BurnTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
-					TopicLen:      4,
-					DataUnpackLen: 3,
-					AbiEvent:      uniswapv3.BurnEvent,
-				},
-			},
-		},
 		uniswapv2.PairCreatedTopic0: pairCreatedEventParser,
-		uniswapv3.SwapTopic0: &SwapEventParser{
-			PoolEventParser: PoolEventParser{
-				Topic:               uniswapv3.SwapTopic0,
-				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.SwapTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
-					TopicLen:      3,
-					DataUnpackLen: 5,
-					AbiEvent:      uniswapv3.SwapEvent,
-				},
-			},
-		},
+		uniswapv2.MintTopic0:        mintEventParser,
+		uniswapv2.BurnTopic0:        burnEventParser,
+		uniswapv2.SwapTopic0:        swapEventParser,
 		uniswapv2.SyncTopic0:        syncEventParser,
-		aerodrome.PairCreatedTopic0: pairCreatedEventParser,
-		uniswapv2.MintTopic0: &MintEventParser{
-			PoolEventParser: PoolEventParser{
-				Topic:               uniswapv2.MintTopic0,
-				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv2.MintTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
-					TopicLen:      2,
-					DataUnpackLen: 2,
-					AbiEvent:      uniswapv2.MintEvent,
-				},
-			},
-		},
-		aerodrome.BurnTopic0: burnEventParser,
+
 		uniswapv3.PoolCreatedTopic0: &PoolCreatedEventParser{
 			FactoryEventParser: FactoryEventParser{
 				Topic:                    uniswapv3.PoolCreatedTopic0,
@@ -118,9 +111,32 @@ var (
 				},
 			},
 		},
-		aerodrome.SwapTopic0: swapEventParser,
-		aerodrome.SyncTopic0: syncEventParser,
-		uniswapv2.SwapTopic0: swapEventParser,
-		uniswapv2.BurnTopic0: burnEventParser,
+		uniswapv3.BurnTopic0: &BurnEventParser{
+			PoolEventParser: PoolEventParser{
+				Topic:               uniswapv3.BurnTopic0,
+				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.BurnTopic0],
+				EventInputParser: event_input_parser.EventInputParser{
+					TopicLen:      4,
+					DataUnpackLen: 3,
+					AbiEvent:      uniswapv3.BurnEvent,
+				},
+			},
+		},
+		uniswapv3.SwapTopic0: &SwapEventParser{
+			PoolEventParser: PoolEventParser{
+				Topic:               uniswapv3.SwapTopic0,
+				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.SwapTopic0],
+				EventInputParser: event_input_parser.EventInputParser{
+					TopicLen:      3,
+					DataUnpackLen: 5,
+					AbiEvent:      uniswapv3.SwapEvent,
+				},
+			},
+		},
+
+		aerodrome.PairCreatedTopic0: pairCreatedEventParser,
+		aerodrome.BurnTopic0:        burnEventParserAerodrome,
+		aerodrome.SwapTopic0:        swapEventParser,
+		aerodrome.SyncTopic0:        syncEventParser,
 	}
 )

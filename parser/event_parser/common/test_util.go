@@ -9,7 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/shopspring/decimal"
 	"math/big"
+)
+
+var (
+	MockNativeTokenPrice = decimal.NewFromInt(1)
 )
 
 type EthLogGetter struct {
