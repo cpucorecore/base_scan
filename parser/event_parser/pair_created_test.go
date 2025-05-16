@@ -1,7 +1,7 @@
 package event_parser
 
 import (
-	"base_scan/parser/event_parser/common"
+	"base_scan/service"
 	"base_scan/types"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -11,9 +11,9 @@ import (
 
 func TestPairCreated_Aerodrome(t *testing.T) {
 	// https://basescan.org/tx/0xff85824c89b77fb78641d11d20738817dbc7fdd0dbad9e791b4e8b2ad8f1a4e7#eventlog#66
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog("0xff85824c89b77fb78641d11d20738817dbc7fdd0dbad9e791b4e8b2ad8f1a4e7", 0)
-	blockTimestamp := ethLogGetter.GetBlockTimestamp(receiptLog.BlockNumber)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog("0xff85824c89b77fb78641d11d20738817dbc7fdd0dbad9e791b4e8b2ad8f1a4e7", 0)
+	blockTimestamp := tc.GetBlockTimestamp(receiptLog.BlockNumber)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
@@ -21,7 +21,7 @@ func TestPairCreated_Aerodrome(t *testing.T) {
 	event.SetBlockTime(time.Unix(int64(blockTimestamp), 0))
 	require.True(t, event.CanGetPair())
 	pair := event.GetPair()
-	pairWrap := pairService.GetTokens(pair)
+	pairWrap := tc.PairService.GetTokens(pair)
 	event.SetPair(pairWrap.Pair)
 
 	expectPair := &types.Pair{
@@ -49,9 +49,9 @@ func TestPairCreated_Aerodrome(t *testing.T) {
 
 func TestPairCreated_UniswapV2(t *testing.T) {
 	// https://basescan.org/tx/0x2a925551ba86be62e96480791f1b152a6c9f542315c2c45643238e77be990b97#eventlog#377
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog("0x2a925551ba86be62e96480791f1b152a6c9f542315c2c45643238e77be990b97", 0)
-	blockTimestamp := ethLogGetter.GetBlockTimestamp(receiptLog.BlockNumber)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog("0x2a925551ba86be62e96480791f1b152a6c9f542315c2c45643238e77be990b97", 0)
+	blockTimestamp := tc.GetBlockTimestamp(receiptLog.BlockNumber)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
@@ -59,7 +59,7 @@ func TestPairCreated_UniswapV2(t *testing.T) {
 	event.SetBlockTime(time.Unix(int64(blockTimestamp), 0))
 	require.True(t, event.CanGetPair())
 	pair := event.GetPair()
-	pairWrap := pairService.GetTokens(pair)
+	pairWrap := tc.PairService.GetTokens(pair)
 	event.SetPair(pairWrap.Pair)
 
 	expectPair := &types.Pair{
@@ -87,9 +87,9 @@ func TestPairCreated_UniswapV2(t *testing.T) {
 
 func TestPairCreated_PancakeV2(t *testing.T) {
 	// https://basescan.org/tx/0xc5d3eae38ca43b8cb8beea8a07fb5b4ee91a805c5ff0569305a83a83a822e16f#eventlog#114
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog("0xc5d3eae38ca43b8cb8beea8a07fb5b4ee91a805c5ff0569305a83a83a822e16f", 0)
-	blockTimestamp := ethLogGetter.GetBlockTimestamp(receiptLog.BlockNumber)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog("0xc5d3eae38ca43b8cb8beea8a07fb5b4ee91a805c5ff0569305a83a83a822e16f", 0)
+	blockTimestamp := tc.GetBlockTimestamp(receiptLog.BlockNumber)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
@@ -97,7 +97,7 @@ func TestPairCreated_PancakeV2(t *testing.T) {
 	event.SetBlockTime(time.Unix(int64(blockTimestamp), 0))
 	require.True(t, event.CanGetPair())
 	pair := event.GetPair()
-	pairWrap := pairService.GetTokens(pair)
+	pairWrap := tc.PairService.GetTokens(pair)
 	event.SetPair(pairWrap.Pair)
 
 	expectPair := &types.Pair{

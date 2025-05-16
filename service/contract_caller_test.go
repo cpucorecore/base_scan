@@ -1,6 +1,8 @@
-package contract_caller
+package service
 
 import (
+	pancakev2 "base_scan/abi/pancake/v2"
+	pancakev3 "base_scan/abi/pancake/v3"
 	"base_scan/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -9,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestParseToken(t *testing.T) {
+func TestContractCaller_ParseToken(t *testing.T) {
 	addresses := []common.Address{
 		common.HexToAddress("0x6636F7B89f64202208f608DEFFa71293EEF7b466"),
 		common.HexToAddress("0x4811d87B7Ab45F380Af38e5830Ab3D8A03B2F4Df"),
@@ -49,7 +51,7 @@ func TestParseToken(t *testing.T) {
 	}
 }
 
-func TestParsePairPancakeV2(t *testing.T) {
+func TestContractCaller_ParsePairPancakeV2(t *testing.T) {
 	tests := []struct {
 		pairAddress    common.Address
 		expectedToken0 common.Address
@@ -81,7 +83,7 @@ func TestParsePairPancakeV2(t *testing.T) {
 		}
 		require.Equal(t, test.expectedToken1, token1)
 
-		pairAddress, callErr := cc.CallGetPair(&token0, &token1)
+		pairAddress, callErr := cc.CallGetPair(&pancakev2.FactoryAddress, &token0, &token1)
 		if callErr != nil {
 			require.Nil(t, callErr)
 		}
@@ -89,7 +91,7 @@ func TestParsePairPancakeV2(t *testing.T) {
 	}
 }
 
-func TestParsePairPancakeV3(t *testing.T) {
+func TestContractCaller_ParsePairPancakeV3(t *testing.T) {
 	tests := []struct {
 		pairAddress    common.Address
 		expectedToken0 common.Address
@@ -104,32 +106,28 @@ func TestParsePairPancakeV3(t *testing.T) {
 		},
 	}
 
-	ethClient, err := ethclient.Dial(config.G.Chain.Endpoint)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cc := NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
+	tc := GetTestContext()
 
 	for _, test := range tests {
-		token0, callToken0Err := cc.CallToken0(&test.pairAddress)
+		token0, callToken0Err := tc.ContractCaller.CallToken0(&test.pairAddress)
 		if callToken0Err != nil {
 			require.Nil(t, callToken0Err)
 		}
 		require.Equal(t, test.expectedToken0, token0)
 
-		token1, callToken1Err := cc.CallToken1(&test.pairAddress)
+		token1, callToken1Err := tc.ContractCaller.CallToken1(&test.pairAddress)
 		if callToken1Err != nil {
 			require.Nil(t, callToken1Err)
 		}
 		require.Equal(t, test.expectedToken1, token1)
 
-		fee, callFeeErr := cc.CallFee(&test.pairAddress)
+		fee, callFeeErr := tc.ContractCaller.CallFee(&test.pairAddress)
 		if callFeeErr != nil {
 			require.Nil(t, callFeeErr)
 		}
 		require.Equal(t, test.fee, fee)
 
-		pairAddress, callErr := cc.CallGetPool(&token0, &token1, big.NewInt(2500))
+		pairAddress, callErr := tc.ContractCaller.CallGetPool(&pancakev3.FactoryAddress, &token0, &token1, big.NewInt(2500))
 		if callErr != nil {
 			require.Nil(t, callErr)
 		}
@@ -137,7 +135,7 @@ func TestParsePairPancakeV3(t *testing.T) {
 	}
 }
 
-func TestGetBnbPrice(t *testing.T) {
+func TestContractCaller_GetBnbPrice(t *testing.T) {
 	t.Skip()
 	ethClient, err := ethclient.Dial(config.G.Chain.Endpoint)
 	if err != nil {
@@ -150,43 +148,4 @@ func TestGetBnbPrice(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Log(price)
-}
-
-func TestIsFourMemeAddress(t *testing.T) {
-	ethClient, err := ethclient.Dial(config.G.Chain.Endpoint)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cc := NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
-
-	tests := []struct {
-		isFourMemeToken bool
-		tokenAddress    common.Address
-	}{
-		{
-			isFourMemeToken: true,
-			tokenAddress:    common.HexToAddress("0x00000471e70672d9Be3C277A3258AeC13E6Da7fd"),
-		},
-		{
-			isFourMemeToken: true,
-			tokenAddress:    common.HexToAddress("0xe2779af3A340990DB23320619130fe57873a4444"),
-		},
-		{
-			isFourMemeToken: false,
-			tokenAddress:    common.HexToAddress("0x79B947b8F689B8200CAa58Bc4093d13E187313B1"),
-		},
-		{
-			isFourMemeToken: false,
-			tokenAddress:    common.HexToAddress("0x7e3d0C6Cd86327efFcA7395953Ce8E81F4DaA6c8"),
-		},
-	}
-
-	for _, test := range tests {
-		isFourMemeAddress := cc.IsFourMemeTokenAddress(test.tokenAddress)
-		if err != nil {
-			t.Fatal(err)
-		}
-		require.Equal(t, test.isFourMemeToken, isFourMemeAddress)
-		t.Log(test.tokenAddress.String(), isFourMemeAddress)
-	}
 }

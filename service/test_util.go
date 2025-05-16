@@ -1,14 +1,13 @@
-package common
+package service
 
 import (
 	"base_scan/cache"
 	"base_scan/config"
-	"base_scan/service"
-	"base_scan/service/contract_caller"
 	"context"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/go-redis/redis/v8"
 	"github.com/shopspring/decimal"
 	"math/big"
 )
@@ -18,32 +17,35 @@ var (
 	Wei18, _             = decimal.NewFromString("1000000000000000000")
 )
 
-type EthLogGetter struct {
+type TestContext struct {
 	ethClient      *ethclient.Client
-	cache          cache.Cache
-	contractCaller *contract_caller.ContractCaller
-	pairService    service.PairService
+	Cache          cache.Cache
+	ContractCaller *ContractCaller
+	PairService    PairService
 }
 
-func PrepareTest() (*EthLogGetter, service.PairService) {
+func GetTestContext() *TestContext {
 	ethClient, err := ethclient.Dial("https://base-rpc.publicnode.com")
 	if err != nil {
 		panic(err)
 	}
 
-	contractCaller := contract_caller.NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
-	cache := cache.MockCache{}
-	pairService := service.NewPairService(cache, contractCaller)
+	contractCaller := NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
+	redisCli := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	cache := cache.NewTwoTierCache(redisCli)
+	pairService := NewPairService(cache, contractCaller)
 
-	return &EthLogGetter{
+	return &TestContext{
 		ethClient:      ethClient,
-		cache:          cache,
-		contractCaller: contractCaller,
-		pairService:    pairService,
-	}, pairService
+		Cache:          cache,
+		ContractCaller: contractCaller,
+		PairService:    pairService,
+	}
 }
 
-func (g *EthLogGetter) GetEthLog(txHashStr string, logIndex int) *ethtypes.Log {
+func (g *TestContext) GetEthLog(txHashStr string, logIndex int) *ethtypes.Log {
 	txHash := common.HexToHash(txHashStr)
 	txReceipt, apiErr := g.ethClient.TransactionReceipt(context.Background(), txHash)
 	if apiErr != nil {
@@ -53,7 +55,7 @@ func (g *EthLogGetter) GetEthLog(txHashStr string, logIndex int) *ethtypes.Log {
 	return txReceipt.Logs[logIndex]
 }
 
-func (g *EthLogGetter) GetBlockTimestamp(blockNumber uint64) uint64 {
+func (g *TestContext) GetBlockTimestamp(blockNumber uint64) uint64 {
 	blockHeader, err := g.ethClient.HeaderByNumber(context.Background(), big.NewInt(int64(blockNumber)))
 	if err != nil {
 		panic(err)

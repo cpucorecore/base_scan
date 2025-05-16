@@ -1,4 +1,4 @@
-package contract_caller
+package service
 
 import (
 	"base_scan/abi/aerodrome"

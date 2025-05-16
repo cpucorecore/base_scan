@@ -1,7 +1,7 @@
 package event_parser
 
 import (
-	"base_scan/parser/event_parser/common"
+	"base_scan/service"
 	"base_scan/types"
 	"base_scan/types/orm"
 	"github.com/shopspring/decimal"
@@ -11,13 +11,13 @@ import (
 
 func TestBurn_UniswapV3(t *testing.T) {
 	// https://basescan.org/tx/0x91db85460d929bfc664779b1bf7fc23ea47436f84bdd1782e6466cb0bb2962ef#eventlog#797
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog("0x09d3714d936513bfc2e36b7c96420da3824c0f273c860e463f360de76cc68f75", 0)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog("0x09d3714d936513bfc2e36b7c96420da3824c0f273c860e463f360de76cc68f75", 0)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
 
-	pairWrap := pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	pairWrap := tc.PairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
 	event.SetPair(pairWrap.Pair)
 
 	tx := event.GetTx(decimal.NewFromFloat(582.8979382022061794))

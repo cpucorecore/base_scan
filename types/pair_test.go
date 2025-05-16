@@ -26,12 +26,6 @@ func TestPair_OrderTokens(t *testing.T) {
 	TokenWBNB := &TokenCore{
 		Address: WETHAddress,
 	}
-	TokenBUSD := &TokenCore{
-		Address: USDAddress,
-	}
-	TokenUSDT := &TokenCore{
-		Address: USDTAddress,
-	}
 	TokenUSDC := &TokenCore{
 		Address: USDCAddress,
 	}
@@ -45,30 +39,6 @@ func TestPair_OrderTokens(t *testing.T) {
 		expected       *Pair
 		TokensReversed bool
 	}{
-		{
-			name: "WETH/USD",
-			pair: &Pair{
-				Token0Core: TokenWBNB,
-				Token1Core: TokenBUSD,
-			},
-			expected: &Pair{
-				Token0Core: TokenWBNB,
-				Token1Core: TokenBUSD,
-			},
-			TokensReversed: false,
-		},
-		{
-			name: "USD/WETH",
-			pair: &Pair{
-				Token0Core: TokenBUSD,
-				Token1Core: TokenWBNB,
-			},
-			expected: &Pair{
-				Token0Core: TokenWBNB,
-				Token1Core: TokenBUSD,
-			},
-			TokensReversed: true,
-		},
 		{
 			name: "WETH/USDC",
 			pair: &Pair{
@@ -94,30 +64,6 @@ func TestPair_OrderTokens(t *testing.T) {
 			TokensReversed: true,
 		},
 		{
-			name: "WETH/USDT",
-			pair: &Pair{
-				Token0Core: TokenWBNB,
-				Token1Core: TokenUSDT,
-			},
-			expected: &Pair{
-				Token0Core: TokenWBNB,
-				Token1Core: TokenUSDT,
-			},
-			TokensReversed: false,
-		},
-		{
-			name: "USDT/WETH",
-			pair: &Pair{
-				Token0Core: TokenUSDT,
-				Token1Core: TokenWBNB,
-			},
-			expected: &Pair{
-				Token0Core: TokenWBNB,
-				Token1Core: TokenUSDT,
-			},
-			TokensReversed: true,
-		},
-		{
 			name: "WETH/NonBase",
 			pair: &Pair{
 				Token0Core: TokenWBNB,
@@ -138,30 +84,6 @@ func TestPair_OrderTokens(t *testing.T) {
 			expected: &Pair{
 				Token0Core: TokenNonBase,
 				Token1Core: TokenWBNB,
-			},
-			TokensReversed: false,
-		},
-		{
-			name: "USD/NonBase",
-			pair: &Pair{
-				Token0Core: TokenBUSD,
-				Token1Core: TokenNonBase,
-			},
-			expected: &Pair{
-				Token0Core: TokenNonBase,
-				Token1Core: TokenBUSD,
-			},
-			TokensReversed: true,
-		},
-		{
-			name: "NonBase/USD",
-			pair: &Pair{
-				Token0Core: TokenNonBase,
-				Token1Core: TokenBUSD,
-			},
-			expected: &Pair{
-				Token0Core: TokenNonBase,
-				Token1Core: TokenBUSD,
 			},
 			TokensReversed: false,
 		},

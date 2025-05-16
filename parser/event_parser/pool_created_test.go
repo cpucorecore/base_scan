@@ -1,7 +1,7 @@
 package event_parser
 
 import (
-	"base_scan/parser/event_parser/common"
+	"base_scan/service"
 	"base_scan/types"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -11,9 +11,9 @@ import (
 
 func TestPoolCreated_UniswapV3(t *testing.T) {
 	// https://basescan.org/tx/0x91db85460d929bfc664779b1bf7fc23ea47436f84bdd1782e6466cb0bb2962ef#eventlog#797
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog("0x91db85460d929bfc664779b1bf7fc23ea47436f84bdd1782e6466cb0bb2962ef", 2)
-	blockTimestamp := ethLogGetter.GetBlockTimestamp(receiptLog.BlockNumber)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog("0x91db85460d929bfc664779b1bf7fc23ea47436f84bdd1782e6466cb0bb2962ef", 2)
+	blockTimestamp := tc.GetBlockTimestamp(receiptLog.BlockNumber)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
@@ -21,7 +21,7 @@ func TestPoolCreated_UniswapV3(t *testing.T) {
 	event.SetBlockTime(time.Unix(int64(blockTimestamp), 0))
 	require.True(t, event.CanGetPair())
 	pair := event.GetPair()
-	pairWrap := pairService.GetTokens(pair)
+	pairWrap := tc.PairService.GetTokens(pair)
 	event.SetPair(pairWrap.Pair)
 
 	expectPair := &types.Pair{
@@ -49,9 +49,9 @@ func TestPoolCreated_UniswapV3(t *testing.T) {
 
 func TestPoolCreated_PancakeV3(t *testing.T) {
 	// https://basescan.org/tx/0x0809776ecaeb651bd0f354e85814e7ed792709e5397ab777044a82a4a760d445#eventlog#291
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog("0x0809776ecaeb651bd0f354e85814e7ed792709e5397ab777044a82a4a760d445", 0)
-	blockTimestamp := ethLogGetter.GetBlockTimestamp(receiptLog.BlockNumber)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog("0x0809776ecaeb651bd0f354e85814e7ed792709e5397ab777044a82a4a760d445", 0)
+	blockTimestamp := tc.GetBlockTimestamp(receiptLog.BlockNumber)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
@@ -59,7 +59,7 @@ func TestPoolCreated_PancakeV3(t *testing.T) {
 	event.SetBlockTime(time.Unix(int64(blockTimestamp), 0))
 	require.True(t, event.CanGetPair())
 	pair := event.GetPair()
-	pairWrap := pairService.GetTokens(pair)
+	pairWrap := tc.PairService.GetTokens(pair)
 	event.SetPair(pairWrap.Pair)
 
 	expectPair := &types.Pair{

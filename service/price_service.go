@@ -4,7 +4,6 @@ import (
 	"base_scan/cache"
 	"base_scan/log"
 	"base_scan/metrics"
-	"base_scan/service/contract_caller"
 	"base_scan/types"
 	"context"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -22,7 +21,7 @@ type PriceService interface {
 
 type priceService struct {
 	cache          cache.Cache
-	contractCaller *contract_caller.ContractCaller
+	contractCaller *ContractCaller
 	workPoolSize   int
 	workPool       *ants.Pool
 	ethClient      *ethclient.Client
@@ -30,7 +29,7 @@ type priceService struct {
 
 func NewPriceService(
 	cache cache.Cache,
-	contractCaller *contract_caller.ContractCaller,
+	contractCaller *ContractCaller,
 	ethClient *ethclient.Client,
 	poolSize int,
 ) PriceService {

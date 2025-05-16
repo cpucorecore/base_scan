@@ -2,6 +2,7 @@ package event_parser
 
 import (
 	"base_scan/parser/event_parser/common"
+	"base_scan/service"
 	"base_scan/types"
 	"base_scan/types/orm"
 	"github.com/shopspring/decimal"
@@ -23,20 +24,20 @@ func TestMint_UniswapV3(t *testing.T) {
 	expectAmt1Wei, _ := decimal.NewFromString("0")
 	program := types.ProtocolNameUniswapV3
 
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog(txHash, logIndex)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog(txHash, logIndex)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
 
-	pairWrap := pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	pairWrap := tc.PairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
 	event.SetPair(pairWrap.Pair)
 
-	tx := event.GetTx(common.MockNativeTokenPrice)
+	tx := event.GetTx(service.MockNativeTokenPrice)
 
 	token0Wei := decimal.NewFromBigInt(big.NewInt(1), int32(pairWrap.Pair.Token0Core.Decimals))
 	expectAmt0 := expectAmt0Wei.Div(token0Wei)
-	expectAmt1 := expectAmt1Wei.Div(common.Wei18)
+	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectTx := &orm.Tx{
 		TxHash:        txHash,
 		Event:         common.EventNameAdd,
@@ -66,20 +67,20 @@ func TestMint_PancakeV3(t *testing.T) {
 	expectAmt1Wei, _ := decimal.NewFromString("119999999999999")
 	program := types.ProtocolNamePancakeV3
 
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog(txHash, logIndex)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog(txHash, logIndex)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
 
-	pairWrap := pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	pairWrap := tc.PairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
 	event.SetPair(pairWrap.Pair)
 
-	tx := event.GetTx(common.MockNativeTokenPrice)
+	tx := event.GetTx(service.MockNativeTokenPrice)
 
 	token0Wei := decimal.NewFromBigInt(big.NewInt(1), int32(pairWrap.Pair.Token0Core.Decimals))
 	expectAmt0 := expectAmt0Wei.Div(token0Wei)
-	expectAmt1 := expectAmt1Wei.Div(common.Wei18)
+	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectTx := &orm.Tx{
 		TxHash:        txHash,
 		Event:         common.EventNameAdd,

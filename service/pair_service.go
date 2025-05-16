@@ -8,13 +8,14 @@ import (
 	"base_scan/cache"
 	"base_scan/log"
 	"base_scan/metrics"
-	"base_scan/service/contract_caller"
 	"base_scan/types"
 	"context"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
+	"math/big"
+	"sync"
 	"time"
 )
 
@@ -27,13 +28,13 @@ type PairService interface {
 type pairService struct {
 	ctx            context.Context
 	cache          cache.Cache
-	contractCaller *contract_caller.ContractCaller
+	contractCaller *ContractCaller
 	group          singleflight.Group
 }
 
 func NewPairService(
 	cache cache.Cache,
-	contractCaller *contract_caller.ContractCaller,
+	contractCaller *ContractCaller,
 ) PairService {
 	return &pairService{
 		ctx:            context.Background(),
@@ -46,45 +47,84 @@ func (s *pairService) SetPair(pair *types.Pair) {
 	s.cache.SetPair(pair)
 }
 
-func (s *pairService) getToken(tokenAddress common.Address) (*types.Token, error) {
-	// TODO parallelize contract call
+func (s *pairService) doGetToken(tokenAddress common.Address) (*types.Token, error) {
 	token := &types.Token{
 		Address: tokenAddress,
 	}
 
-	name, callNameErr := s.contractCaller.CallName(&tokenAddress)
-	if callNameErr == nil {
-		token.Name = name
+	var wg sync.WaitGroup
+	wg.Add(4)
+
+	var (
+		nameRes struct {
+			name string
+			err  error
+		}
+		symbolRes struct {
+			symbol string
+			err    error
+		}
+		decimalsRes struct {
+			decimals int
+			err      error
+		}
+		supplyRes struct {
+			supply *big.Int
+			err    error
+		}
+	)
+
+	go func() {
+		defer wg.Done()
+		nameRes.name, nameRes.err = s.contractCaller.CallName(&tokenAddress)
+	}()
+
+	go func() {
+		defer wg.Done()
+		symbolRes.symbol, symbolRes.err = s.contractCaller.CallSymbol(&tokenAddress)
+	}()
+
+	go func() {
+		defer wg.Done()
+		decimalsRes.decimals, decimalsRes.err = s.contractCaller.CallDecimals(&tokenAddress)
+	}()
+
+	go func() {
+		defer wg.Done()
+		supplyRes.supply, supplyRes.err = s.contractCaller.CallTotalSupply(&tokenAddress)
+	}()
+
+	wg.Wait()
+
+	if nameRes.err == nil {
+		token.Name = nameRes.name
 	}
 
-	symbol, callSymbolErr := s.contractCaller.CallSymbol(&tokenAddress)
-	if callSymbolErr == nil {
-		token.Symbol = symbol
+	if symbolRes.err == nil {
+		token.Symbol = symbolRes.symbol
 	}
 
-	decimals, callDecimalsErr := s.contractCaller.CallDecimals(&tokenAddress)
-	if callDecimalsErr != nil {
+	if decimalsRes.err != nil {
 		token.Filtered = true
-		return token, callDecimalsErr
+		return token, decimalsRes.err
 	}
-	token.Decimals = (int8)(decimals)
+	token.Decimals = int8(decimalsRes.decimals)
 
-	totalSupply, callTotalSupplyErr := s.contractCaller.CallTotalSupply(&tokenAddress)
-	if callTotalSupplyErr == nil {
-		token.TotalSupply = decimal.NewFromBigInt(totalSupply, -(int32)(token.Decimals))
+	if supplyRes.err == nil {
+		token.TotalSupply = decimal.NewFromBigInt(supplyRes.supply, -int32(token.Decimals))
 	}
 
 	return token, nil
 }
 
-func (s *pairService) GetToken(tokenAddress common.Address) (*types.Token, error, bool) {
+func (s *pairService) getToken(tokenAddress common.Address) (*types.Token, error, bool) {
 	cacheToken, ok := s.cache.GetToken(tokenAddress)
 	if ok {
 		return cacheToken, nil, true
 	}
 
 	now := time.Now()
-	token, err := s.getToken(tokenAddress)
+	token, err := s.doGetToken(tokenAddress)
 	if err != nil {
 		s.cache.SetToken(token)
 		return nil, err, false
@@ -101,14 +141,14 @@ func (s *pairService) getTokens(pair *types.Pair) *types.PairWrap {
 		NewPair: true,
 	}
 
-	token0, getToken0Err, token0FromCache := s.GetToken(pair.Token0Core.Address)
+	token0, getToken0Err, token0FromCache := s.getToken(pair.Token0Core.Address)
 	if getToken0Err != nil {
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetToken0
 		return pairWrap
 	}
 
-	token1, getToken1Err, token1FromCache := s.GetToken(pair.Token1Core.Address)
+	token1, getToken1Err, token1FromCache := s.getToken(pair.Token1Core.Address)
 	if getToken1Err != nil {
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetToken1
@@ -187,6 +227,66 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 		Address: pairAddress,
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	var (
+		token0Res struct {
+			address common.Address
+			err     error
+		}
+		token1Res struct {
+			address common.Address
+			err     error
+		}
+	)
+
+	go func() {
+		defer wg.Done()
+		token0Res.address, token0Res.err = s.contractCaller.CallToken0(&pairAddress)
+	}()
+
+	go func() {
+		defer wg.Done()
+		token1Res.address, token1Res.err = s.contractCaller.CallToken1(&pairAddress)
+	}()
+
+	wg.Wait()
+
+	if token0Res.err != nil {
+		log.Logger.Info("Err: CallToken0 err, this pair will filtered",
+			zap.Error(token0Res.err),
+			zap.String("address", pairAddress.String()))
+		pair.Filtered = true
+		pair.FilterCode = types.FilterCodeGetToken0
+		return pair
+	}
+	pair.Token0Core = &types.TokenCore{
+		Address: token0Res.address,
+	}
+
+	if token1Res.err != nil {
+		log.Logger.Info("Err: CallToken1 err, this pair will filtered",
+			zap.Error(token1Res.err),
+			zap.String("address", pairAddress.String()))
+		pair.Filtered = true
+		pair.FilterCode = types.FilterCodeGetToken1
+		return pair
+	}
+	pair.Token1Core = &types.TokenCore{
+		Address: token1Res.address,
+	}
+
+	pair.FilterByToken0AndToken1()
+
+	return pair
+}
+
+func (s *pairService) getPair2(pairAddress common.Address) *types.Pair {
+	pair := &types.Pair{
+		Address: pairAddress,
+	}
+
 	token0Address, err0 := s.contractCaller.CallToken0(&pairAddress)
 	if err0 != nil {
 		log.Logger.Error("CallToken0 err, this pair will filtered", zap.Error(err0), zap.String("address", pairAddress.String()))
@@ -216,59 +316,51 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 	return pair
 }
 
+func (s *pairService) verifyPairV2(pairFactoryAddress common.Address, pair *types.Pair) bool {
+	pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&pairFactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address)
+	if getPairErr != nil {
+		return false
+	}
+	return types.IsSameAddress(pairAddressQueried, pair.Address)
+}
+
+func (s *pairService) verifyPairV3(pairFactoryAddress common.Address, pair *types.Pair) bool {
+	fee, callFeeErr := s.contractCaller.CallFee(&pair.Address)
+	if callFeeErr != nil {
+		return false
+	}
+
+	pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&pairFactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address, fee)
+	if getPairErr != nil {
+		return false
+	}
+
+	return types.IsSameAddress(pairAddressQueried, pair.Address)
+}
+
 func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
 	for _, protocolId := range protocolIds {
 		switch protocolId {
 		case types.ProtocolIdUniswapV2:
-			pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&uniswapv2.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address)
-			if getPairErr != nil {
-				continue
-			}
-
-			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+			if s.verifyPairV2(uniswapv2.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
 				return true
 			}
 
 		case types.ProtocolIdPancakeV2:
-			pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&pancakev2.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address)
-			if getPairErr != nil {
-				continue
-			}
-
-			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+			if s.verifyPairV2(pancakev2.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
 				return true
 			}
 
 		case types.ProtocolIdUniswapV3:
-			fee, callFeeErr := s.contractCaller.CallFee(&pair.Address)
-			if callFeeErr != nil {
-				continue
-			}
-
-			pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&uniswapv3.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address, fee)
-			if getPairErr != nil {
-				continue
-			}
-
-			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+			if s.verifyPairV3(uniswapv3.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
 				return true
 			}
 
 		case types.ProtocolIdPancakeV3:
-			fee, callFeeErr := s.contractCaller.CallFee(&pair.Address)
-			if callFeeErr != nil {
-				continue
-			}
-
-			pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&pancakev3.FactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address, fee)
-			if getPairErr != nil {
-				continue
-			}
-
-			if types.IsSameAddress(pairAddressQueried, pair.Address) {
+			if s.verifyPairV3(pancakev3.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
 				return true
 			}
@@ -289,58 +381,4 @@ func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
 	pair.Filtered = true
 	pair.FilterCode = types.FilterCodeVerifyFailed
 	return false
-}
-
-func (s *pairService) getPairV2(protocolId int, pairAddress common.Address) *types.Pair {
-	now := time.Now()
-
-	pair := &types.Pair{
-		ProtocolId: protocolId,
-		Address:    pairAddress,
-	}
-
-	token0Address, err0 := s.contractCaller.CallToken0(&pairAddress)
-	if err0 != nil {
-		log.Logger.Error("CallToken0 err, this pair will filtered", zap.Error(err0), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetToken0
-		return pair
-	}
-
-	pair.Token0Core = &types.TokenCore{
-		Address: token0Address,
-	}
-
-	token1Address, err1 := s.contractCaller.CallToken1(&pairAddress)
-	if err1 != nil {
-		log.Logger.Error("CallToken1 err, this pair will filtered", zap.Error(err1), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetToken1
-		return pair
-	}
-
-	pair.Token1Core = &types.TokenCore{
-		Address: token1Address,
-	}
-
-	if pair.FilterByToken0AndToken1() {
-		return pair
-	}
-
-	isPool, getPairErr := s.contractCaller.CallIsPool(&pairAddress)
-	if getPairErr != nil {
-		log.Logger.Error("CallGetPair err, this pair will filtered", zap.Error(getPairErr), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetPair
-		return pair
-	}
-
-	if !isPool {
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeVerifyFailed
-		return pair
-	}
-
-	metrics.GetV2PairDuration.Observe(time.Since(now).Seconds())
-	return pair
 }

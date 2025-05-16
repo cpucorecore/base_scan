@@ -1,7 +1,7 @@
 package event_parser
 
 import (
-	"base_scan/parser/event_parser/common"
+	"base_scan/service"
 	"base_scan/types"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
@@ -21,13 +21,13 @@ func TestSync_Aerodrome(t *testing.T) {
 	expectAmt1Wei, _ := decimal.NewFromString("50")
 	program := types.ProtocolNameAerodrome
 
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog(txHash, logIndex)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog(txHash, logIndex)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
 
-	pairWrap := pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	pairWrap := tc.PairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
 	event.SetPair(pairWrap.Pair)
 
 	require.False(t, event.CanGetTx())
@@ -35,7 +35,7 @@ func TestSync_Aerodrome(t *testing.T) {
 	poolUpdate := event.GetPoolUpdate()
 	token0Wei := decimal.NewFromBigInt(big.NewInt(1), int32(pairWrap.Pair.Token0Core.Decimals))
 	expectAmt0 := expectAmt0Wei.Div(token0Wei)
-	expectAmt1 := expectAmt1Wei.Div(common.Wei18)
+	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectPoolUpdate := &types.PoolUpdate{
 		Program:       program,
 		LogIndex:      LogIndex,
@@ -59,13 +59,13 @@ func TestSync_UniswapV2(t *testing.T) {
 	expectAmt1Wei, _ := decimal.NewFromString("10000000000000")
 	program := types.ProtocolNameUniswapV2
 
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog(txHash, logIndex)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog(txHash, logIndex)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
 
-	pairWrap := pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	pairWrap := tc.PairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
 	event.SetPair(pairWrap.Pair)
 
 	require.False(t, event.CanGetTx())
@@ -73,7 +73,7 @@ func TestSync_UniswapV2(t *testing.T) {
 	poolUpdate := event.GetPoolUpdate()
 	token0Wei := decimal.NewFromBigInt(big.NewInt(1), int32(pairWrap.Pair.Token0Core.Decimals))
 	expectAmt0 := expectAmt0Wei.Div(token0Wei)
-	expectAmt1 := expectAmt1Wei.Div(common.Wei18)
+	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectPoolUpdate := &types.PoolUpdate{
 		Program:       program,
 		LogIndex:      LogIndex,
@@ -97,13 +97,13 @@ func TestSync_PancakeV2(t *testing.T) {
 	expectAmt1Wei, _ := decimal.NewFromString("3500000000000000")
 	program := types.ProtocolNamePancakeV2
 
-	ethLogGetter, pairService := common.PrepareTest()
-	receiptLog := ethLogGetter.GetEthLog(txHash, logIndex)
+	tc := service.GetTestContext()
+	receiptLog := tc.GetEthLog(txHash, logIndex)
 
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
 
-	pairWrap := pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	pairWrap := tc.PairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
 	event.SetPair(pairWrap.Pair)
 
 	require.False(t, event.CanGetTx())
@@ -111,7 +111,7 @@ func TestSync_PancakeV2(t *testing.T) {
 	poolUpdate := event.GetPoolUpdate()
 	token0Wei := decimal.NewFromBigInt(big.NewInt(1), int32(pairWrap.Pair.Token0Core.Decimals))
 	expectAmt0 := expectAmt0Wei.Div(token0Wei)
-	expectAmt1 := expectAmt1Wei.Div(common.Wei18)
+	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectPoolUpdate := &types.PoolUpdate{
 		Program:       program,
 		LogIndex:      LogIndex,

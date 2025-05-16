@@ -9,7 +9,6 @@ import (
 	"base_scan/repository"
 	"base_scan/sequencer"
 	"base_scan/service"
-	"base_scan/service/contract_caller"
 	"base_scan/types"
 	"flag"
 	"fmt"
@@ -68,10 +67,10 @@ func main() {
 	})
 	cache := cache.NewTwoTierCache(redisCli)
 
-	contractCaller := contract_caller.NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
+	contractCaller := service.NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
 
 	pairService := service.NewPairService(cache, contractCaller)
-	contractCallerArchive := contract_caller.NewContractCaller(ethClientArchive, config.G.ContractCaller.Retry.GetRetryParams())
+	contractCallerArchive := service.NewContractCaller(ethClientArchive, config.G.ContractCaller.Retry.GetRetryParams())
 	priceService := service.NewPriceService(cache, contractCallerArchive, ethClient, config.G.PriceService.PoolSize)
 
 	blockHandlerSequencer := sequencer.NewBlockSequencer()
