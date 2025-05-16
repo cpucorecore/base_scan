@@ -301,5 +301,5 @@ func (c *ContractCaller) GetNativeTokenPriceByBlockNumber(blockNumber *big.Int) 
 		return decimal.Zero, ErrReverse1NotBigInt
 	}
 
-	return decimal.NewFromBigInt(reserve0, -6).Div(decimal.NewFromBigInt(reserve1, -18)), nil
+	return decimal.NewFromBigInt(reserve1, -6).Div(decimal.NewFromBigInt(reserve0, -18)), nil
 }
