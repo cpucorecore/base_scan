@@ -60,7 +60,7 @@ func NewTwoTierCache(redis *redis.Client) Cache {
 }
 
 func PriceCacheKey(blockNumber *big.Int) string {
-	return fmt.Sprintf("P:%d", blockNumber.String())
+	return fmt.Sprintf("P:%s", blockNumber.String())
 }
 
 func TokenCacheKey(address common.Address) string {
