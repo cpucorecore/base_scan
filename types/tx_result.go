@@ -7,28 +7,49 @@ import (
 )
 
 type TxPairEvent struct {
-	V2 []Event
-	V3 []Event
+	UniswapV2 []Event
+	UniswapV3 []Event
+	PancakeV2 []Event
+	PancakeV3 []Event
+	Aerodrome []Event
 }
 
 func (tpe *TxPairEvent) AddEvent(event Event) {
-	switch event.GetPossibleProtocolIds()[0] { // TODO fixme
+	switch event.GetProtocolId() {
 	case ProtocolIdUniswapV2:
-		if tpe.V2 == nil {
-			tpe.V2 = make([]Event, 0, 10)
+		if tpe.UniswapV2 == nil {
+			tpe.UniswapV2 = make([]Event, 0, 10)
 		}
-		tpe.V2 = append(tpe.V2, event)
+		tpe.UniswapV2 = append(tpe.UniswapV2, event)
 	case ProtocolIdUniswapV3:
-		if tpe.V3 == nil {
-			tpe.V3 = make([]Event, 0, 10)
+		if tpe.UniswapV3 == nil {
+			tpe.UniswapV3 = make([]Event, 0, 10)
 		}
-		tpe.V3 = append(tpe.V3, event)
+		tpe.UniswapV3 = append(tpe.UniswapV3, event)
+	case ProtocolIdPancakeV2:
+		if tpe.PancakeV2 == nil {
+			tpe.PancakeV2 = make([]Event, 0, 10)
+		}
+		tpe.PancakeV2 = append(tpe.PancakeV2, event)
+	case ProtocolIdPancakeV3:
+		if tpe.PancakeV3 == nil {
+			tpe.PancakeV3 = make([]Event, 0, 10)
+		}
+		tpe.PancakeV3 = append(tpe.PancakeV3, event)
+	case ProtocolIdAerodrome:
+		if tpe.Aerodrome == nil {
+			tpe.Aerodrome = make([]Event, 0, 10)
+		}
+		tpe.Aerodrome = append(tpe.Aerodrome, event)
 	}
 }
 
 func (tpe *TxPairEvent) LinkEvents() {
-	tpe.LinkEventsPancakeV2()
-	tpe.LinkEventsV3()
+	tpe.linkEventByProtocol(tpe.UniswapV2)
+	tpe.linkEventByProtocol(tpe.UniswapV3)
+	tpe.linkEventByProtocol(tpe.PancakeV2)
+	tpe.linkEventByProtocol(tpe.PancakeV3)
+	tpe.linkEventByProtocol(tpe.Aerodrome)
 }
 
 func LinkPairCreatedEventAndMintEvent(pairCreatedEvents, mintEvents []Event) {
@@ -37,32 +58,19 @@ func LinkPairCreatedEventAndMintEvent(pairCreatedEvents, mintEvents []Event) {
 		if i < mintEventsLen {
 			pairCreatedEvent.LinkEvent(mintEvents[i])
 		} else {
-			log.Logger.Warn("pair have no related mint event", zap.Any("pairCreatedEvent", pairCreatedEvent))
+			log.Logger.Info("Waring: pair have no related mint event", zap.Any("pairCreatedEvent", pairCreatedEvent))
 		}
 	}
 }
 
-func (tpe *TxPairEvent) LinkEventsPancakeV2() {
-	mintEvents := make([]Event, 0)
-	pairCreatedEvents := make([]Event, 0)
-	for _, v2Event := range tpe.V2 {
-		if v2Event.IsMint() {
-			mintEvents = append(mintEvents, v2Event)
-		} else if v2Event.IsCreatePair() {
-			pairCreatedEvents = append(pairCreatedEvents, v2Event)
-		}
-	}
-	LinkPairCreatedEventAndMintEvent(pairCreatedEvents, mintEvents)
-}
-
-func (tpe *TxPairEvent) LinkEventsV3() {
-	mintEvents := make([]Event, 0)
-	pairCreatedEvents := make([]Event, 0)
-	for _, v3Event := range tpe.V3 {
-		if v3Event.IsMint() {
-			mintEvents = append(mintEvents, v3Event)
-		} else if v3Event.IsCreatePair() {
-			pairCreatedEvents = append(pairCreatedEvents, v3Event)
+func (tpe *TxPairEvent) linkEventByProtocol(events []Event) {
+	mintEvents := make([]Event, 0, 10)
+	pairCreatedEvents := make([]Event, 0, 10)
+	for _, event := range events {
+		if event.IsMint() {
+			mintEvents = append(mintEvents, event)
+		} else if event.IsCreatePair() {
+			pairCreatedEvents = append(pairCreatedEvents, event)
 		}
 	}
 	LinkPairCreatedEventAndMintEvent(pairCreatedEvents, mintEvents)

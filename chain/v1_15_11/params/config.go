@@ -26,7 +26,7 @@ var (
 	}
 
 	ChainConfig = &params.ChainConfig{
-		ChainID:                 big.NewInt(1),
+		ChainID:                 big.NewInt(8453),
 		HomesteadBlock:          big.NewInt(1_150_000),
 		DAOForkBlock:            big.NewInt(1_920_000),
 		DAOForkSupport:          true,

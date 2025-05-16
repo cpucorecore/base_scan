@@ -45,8 +45,11 @@ func (br *BlockResult) getAllEvents() []Event {
 	events := make([]Event, 0, 500)
 	for _, txResult := range br.TxResults {
 		for _, txPairEvent := range txResult.PairAddress2TxPairEvent {
-			events = append(events, txPairEvent.V2...)
-			events = append(events, txPairEvent.V3...)
+			events = append(events, txPairEvent.UniswapV2...)
+			events = append(events, txPairEvent.UniswapV3...)
+			events = append(events, txPairEvent.PancakeV2...)
+			events = append(events, txPairEvent.PancakeV3...)
+			events = append(events, txPairEvent.Aerodrome...)
 		}
 	}
 	return events
@@ -87,12 +90,12 @@ func (br *BlockResult) GetKafkaMessage() *EthBlock {
 	events := br.getAllEvents()
 
 	txs := make([]*orm.Tx, 0, len(events))
-	uniswapNewPairs := make([]*Pair, 0, 10) // v2 PairCreated and v3 PoolCreated
+	newPairs := make([]*Pair, 0, 10)
 	poolUpdates := make([]*PoolUpdate, 0, 40)
 	poolUpdateParameters := make([]*PoolUpdateParameter, 0, 40)
 	for _, event := range events {
 		if event.IsCreatePair() {
-			uniswapNewPairs = append(uniswapNewPairs, event.GetPair())
+			newPairs = append(newPairs, event.GetPair())
 			continue
 		}
 
@@ -109,8 +112,8 @@ func (br *BlockResult) GetKafkaMessage() *EthBlock {
 		}
 	}
 
-	// uniswapNewPairs have more infos than br.NewPairs
-	for _, pair := range uniswapNewPairs {
+	// newPairs have more infos than br.NewPairs
+	for _, pair := range newPairs {
 		br.NewPairs[pair.Address] = pair
 	}
 
@@ -119,7 +122,7 @@ func (br *BlockResult) GetKafkaMessage() *EthBlock {
 		ormTokens = append(ormTokens, token.GetOrmToken())
 	}
 
-	ormPairs := make([]*orm.Pair, 0, len(uniswapNewPairs))
+	ormPairs := make([]*orm.Pair, 0, len(newPairs))
 	for _, pair := range br.NewPairs {
 		ormPairs = append(ormPairs, pair.GetOrmPair())
 	}
