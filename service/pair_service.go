@@ -141,15 +141,37 @@ func (s *pairService) getTokens(pair *types.Pair) *types.PairWrap {
 		NewPair: true,
 	}
 
-	token0, getToken0Err, token0FromCache := s.getToken(pair.Token0Core.Address)
-	if getToken0Err != nil {
+	var (
+		wg                               sync.WaitGroup
+		token0                           *types.Token
+		token1                           *types.Token
+		token0Err, token1Err             error
+		token0FromCache, token1FromCache bool
+	)
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		t0, err, fromCache := s.getToken(pair.Token0Core.Address)
+		token0, token0Err, token0FromCache = t0, err, fromCache
+	}()
+
+	go func() {
+		defer wg.Done()
+		t1, err, fromCache := s.getToken(pair.Token1Core.Address)
+		token1, token1Err, token1FromCache = t1, err, fromCache
+	}()
+
+	wg.Wait()
+
+	if token0Err != nil {
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetToken0
 		return pairWrap
 	}
 
-	token1, getToken1Err, token1FromCache := s.getToken(pair.Token1Core.Address)
-	if getToken1Err != nil {
+	if token1Err != nil {
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetToken1
 		return pairWrap
@@ -275,40 +297,6 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 	}
 	pair.Token1Core = &types.TokenCore{
 		Address: token1Res.address,
-	}
-
-	pair.FilterByToken0AndToken1()
-
-	return pair
-}
-
-func (s *pairService) getPair2(pairAddress common.Address) *types.Pair {
-	pair := &types.Pair{
-		Address: pairAddress,
-	}
-
-	token0Address, err0 := s.contractCaller.CallToken0(&pairAddress)
-	if err0 != nil {
-		log.Logger.Error("CallToken0 err, this pair will filtered", zap.Error(err0), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetToken0
-		return pair
-	}
-
-	pair.Token0Core = &types.TokenCore{
-		Address: token0Address,
-	}
-
-	token1Address, err1 := s.contractCaller.CallToken1(&pairAddress)
-	if err1 != nil {
-		log.Logger.Error("CallToken1 err, this pair will filtered", zap.Error(err1), zap.String("address", pairAddress.String()))
-		pair.Filtered = true
-		pair.FilterCode = types.FilterCodeGetToken1
-		return pair
-	}
-
-	pair.Token1Core = &types.TokenCore{
-		Address: token1Address,
 	}
 
 	pair.FilterByToken0AndToken1()
