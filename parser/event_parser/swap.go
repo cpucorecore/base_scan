@@ -3,8 +3,14 @@ package event_parser
 import (
 	"base_scan/parser/event_parser/event"
 	"base_scan/types"
+	"errors"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"math/big"
+)
+
+var (
+	errAmountInZero  = errors.New("amount in is zero")
+	errAmountOutZero = errors.New("amount out is zero")
 )
 
 type SwapEventParser struct {
@@ -23,6 +29,14 @@ func (o *SwapEventParser) Parse(receiptLog *ethtypes.Log) (types.Event, error) {
 		Amount1InWei:  eventInput[1].(*big.Int),
 		Amount0OutWei: eventInput[2].(*big.Int),
 		Amount1OutWei: eventInput[3].(*big.Int),
+	}
+
+	if e.Amount0InWei.Sign() == 0 && e.Amount1InWei.Sign() == 0 {
+		return nil, errAmountInZero
+	}
+
+	if e.Amount0OutWei.Sign() == 0 && e.Amount1OutWei.Sign() == 0 {
+		return nil, errAmountOutZero
 	}
 
 	e.Pair = &types.Pair{

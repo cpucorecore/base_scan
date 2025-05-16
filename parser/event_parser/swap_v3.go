@@ -3,8 +3,14 @@ package event_parser
 import (
 	"base_scan/parser/event_parser/event"
 	"base_scan/types"
+	"errors"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"math/big"
+)
+
+var (
+	errAmount0Zero = errors.New("amount0 is zero")
+	errAmount1Zero = errors.New("amount1 is zero")
 )
 
 type SwapEventParserV3 struct {
@@ -21,6 +27,14 @@ func (o *SwapEventParserV3) Parse(receiptLog *ethtypes.Log) (types.Event, error)
 		EventCommon: types.EventCommonFromEthLog(receiptLog),
 		Amount0Wei:  input[0].(*big.Int),
 		Amount1Wei:  input[1].(*big.Int),
+	}
+
+	if e.Amount0Wei.Sign() == 0 {
+		return nil, errAmount0Zero
+	}
+
+	if e.Amount1Wei.Sign() == 0 {
+		return nil, errAmount1Zero
 	}
 
 	e.Pair = &types.Pair{
