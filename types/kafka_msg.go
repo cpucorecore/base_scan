@@ -1,7 +1,7 @@
 package types
 
 import (
-	"base_scan/types/orm"
+	"base_scan/repository/orm"
 )
 
 type EthBlock struct {

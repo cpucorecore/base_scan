@@ -31,25 +31,23 @@ type BlockGetter interface {
 }
 
 type blockGetter struct {
-	ethClient            *ethclient.Client
-	wsEthClient          *ethclient.Client
-	queue                chan uint64
-	buffer               chan *types.BlockContext
-	workPool             *ants.Pool
-	cache                cache.BlockCache
-	stopped              bool
-	stoppedLock          sync.RWMutex
-	blockHeaderChan      chan *ethtypes.Header
-	blockGetterSequencer sequencer.BlockSequencer
-	headerHeightLock     sync.RWMutex
-	headerHeight         uint64
-	retryParams          *config.RetryParams
+	ethClient       *ethclient.Client
+	wsEthClient     *ethclient.Client
+	inputQueue      chan uint64
+	outputBuffer    chan *types.BlockContext
+	workPool        *ants.Pool
+	cache           cache.BlockCache
+	stopped         SafeVar[bool]
+	blockHeaderChan chan *ethtypes.Header
+	blockSequencer  sequencer.BlockSequencer
+	headerHeight    SafeVar[uint64]
+	retryParams     *config.RetryParams
 }
 
 func NewBlockGetter(ethClient *ethclient.Client,
 	wsEthClient *ethclient.Client,
 	cache cache.BlockCache,
-	blockGetterSequencer sequencer.BlockSequencer,
+	blockSequencer sequencer.BlockSequencer,
 	retryParams *config.RetryParams,
 ) BlockGetter {
 	workPool, err := ants.NewPool(config.G.BlockGetter.PoolSize)
@@ -58,19 +56,19 @@ func NewBlockGetter(ethClient *ethclient.Client,
 	}
 
 	return &blockGetter{
-		ethClient:            ethClient,
-		wsEthClient:          wsEthClient,
-		queue:                make(chan uint64, config.G.BlockGetter.QueueSize),
-		buffer:               make(chan *types.BlockContext, 10),
-		workPool:             workPool,
-		cache:                cache,
-		blockHeaderChan:      make(chan *ethtypes.Header, 100),
-		blockGetterSequencer: blockGetterSequencer,
-		retryParams:          retryParams,
+		ethClient:       ethClient,
+		wsEthClient:     wsEthClient,
+		inputQueue:      make(chan uint64, config.G.BlockGetter.QueueSize),
+		outputBuffer:    make(chan *types.BlockContext, 10),
+		workPool:        workPool,
+		cache:           cache,
+		blockHeaderChan: make(chan *ethtypes.Header, 100),
+		blockSequencer:  blockSequencer,
+		retryParams:     retryParams,
 	}
 }
 
-func (bg *blockGetter) getBlockSync(blockNumber uint64) (*types.BlockContext, error) {
+func (bg *blockGetter) getBlock(blockNumber uint64) (*types.BlockContext, error) {
 	now := time.Now()
 	block, getBlockErr := bg.ethClient.BlockByNumber(context.Background(), big.NewInt(int64(blockNumber)))
 	if getBlockErr != nil {
@@ -95,33 +93,18 @@ func (bg *blockGetter) getBlockSync(blockNumber uint64) (*types.BlockContext, er
 	}, nil
 }
 
-func (bg *blockGetter) getBlockSyncWithRetry(blockNumber uint64) (*types.BlockContext, error) {
+func (bg *blockGetter) getBlockWithRetry(blockNumber uint64) (*types.BlockContext, error) {
 	return retry.DoWithData(func() (*types.BlockContext, error) {
-		return bg.getBlockSync(blockNumber)
+		return bg.getBlock(blockNumber)
 	}, bg.retryParams.Attempts, bg.retryParams.Delay)
 }
 
 func (bg *blockGetter) GetBlockAsync(blockNumber uint64) {
-	bg.queue <- blockNumber
+	bg.inputQueue <- blockNumber
 }
 
 func (bg *blockGetter) Next() *types.BlockContext {
-	return <-bg.buffer
-}
-
-func (bg *blockGetter) latestBlockNumber() (uint64, error) {
-	blockNumber, err := bg.ethClient.BlockNumber(context.Background())
-	if err != nil {
-		log.Logger.Error("block number err", zap.Error(err))
-		return 0, err
-	}
-	return blockNumber, nil
-}
-
-func (bg *blockGetter) latestBlockNumberWithRetry() (uint64, error) {
-	return retry.DoWithData(func() (uint64, error) {
-		return bg.latestBlockNumber()
-	}, bg.retryParams.Attempts, bg.retryParams.Delay)
+	return <-bg.outputBuffer
 }
 
 func (bg *blockGetter) Start() {
@@ -130,22 +113,22 @@ func (bg *blockGetter) Start() {
 	tagFor:
 		for {
 			select {
-			case blockNumber, ok := <-bg.queue:
+			case blockNumber, ok := <-bg.inputQueue:
 				if !ok {
-					log.Logger.Info("block queue is closed")
+					log.Logger.Info("block inputQueue is closed")
 					break tagFor
 				}
 				wg.Add(1)
 				bg.workPool.Submit(func() {
 					defer wg.Done()
 					log.Logger.Info("get block start", zap.Uint64("block_number", blockNumber))
-					bw, err := bg.getBlockSyncWithRetry(blockNumber)
+					bw, err := bg.getBlockWithRetry(blockNumber)
 					if err != nil {
 						log.Logger.Error("get block err", zap.Uint64("blockNumber", blockNumber), zap.Error(err))
 						return
 					}
 					log.Logger.Info("get block success", zap.Uint64("blockNumber", blockNumber))
-					bg.blockGetterSequencer.Commit(bw, bg.buffer)
+					bg.blockSequencer.Commit(bw, bg.outputBuffer)
 				})
 			}
 		}
@@ -154,7 +137,7 @@ func (bg *blockGetter) Start() {
 		log.Logger.Debug("wait block getter task finish", zap.Int("taskNumber", taskNumber))
 		wg.Wait()
 		log.Logger.Debug("all block getter task finish")
-		close(bg.buffer)
+		close(bg.outputBuffer)
 	}()
 }
 
@@ -176,17 +159,13 @@ func (bg *blockGetter) GetStartBlockNumber(startBlockNumber uint64) uint64 {
 }
 
 func (bg *blockGetter) setHeaderHeight(headerHeight uint64) {
-	bg.headerHeightLock.Lock()
-	defer bg.headerHeightLock.Unlock()
-	if headerHeight > bg.headerHeight {
-		bg.headerHeight = headerHeight
+	if headerHeight > bg.headerHeight.Get() {
+		bg.headerHeight.Set(headerHeight)
 	}
 }
 
 func (bg *blockGetter) getHeaderHeight() uint64 {
-	bg.headerHeightLock.RLock()
-	defer bg.headerHeightLock.RUnlock()
-	return bg.headerHeight
+	return bg.headerHeight.Get()
 }
 
 func (bg *blockGetter) subscribeNewHead() (ethereum.Subscription, <-chan error, error) {
@@ -271,17 +250,13 @@ func (bg *blockGetter) StartDispatch(startBlockNumber uint64) {
 }
 
 func (bg *blockGetter) Stop() {
-	bg.stoppedLock.Lock()
-	defer bg.stoppedLock.Unlock()
-	bg.stopped = true
+	bg.stopped.Set(true)
 }
 
 func (bg *blockGetter) isStopped() bool {
-	bg.stoppedLock.RLock()
-	defer bg.stoppedLock.RUnlock()
-	return bg.stopped
+	return bg.stopped.Get()
 }
 
 func (bg *blockGetter) doStop() {
-	close(bg.queue)
+	close(bg.inputQueue)
 }

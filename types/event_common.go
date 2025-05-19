@@ -1,7 +1,7 @@
 package types
 
 import (
-	"base_scan/types/orm"
+	"base_scan/repository/orm"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/shopspring/decimal"

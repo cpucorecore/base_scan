@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"base_scan/types/orm"
+	"base_scan/repository/orm"
 	_ "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

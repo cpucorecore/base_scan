@@ -2,7 +2,7 @@ package repository
 
 import (
 	"base_scan/chain"
-	"base_scan/types/orm"
+	"base_scan/repository/orm"
 	"gorm.io/gorm"
 )
 

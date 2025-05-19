@@ -2,7 +2,7 @@ package types
 
 import (
 	"base_scan/chain"
-	"base_scan/types/orm"
+	"base_scan/repository/orm"
 	"encoding/json"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	WETH_USDC_PAIR = "0x88a43bbdf9d098eec7bceda4e2494615dfd9bb9c" // Uniswap v2 WETH/USDC pair
+	WETH_USDC_PAIR = "0x88A43bbDF9D098eEC7bCEda4e2494615dfD9bB9C" // Uniswap v2 WETH/USDC pair
 	WETH           = "0x4200000000000000000000000000000000000006"
 	USDC           = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 )

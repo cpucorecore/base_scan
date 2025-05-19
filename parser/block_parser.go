@@ -163,7 +163,6 @@ func (p *blockParser) parseBlock(blockCtx *types.BlockContext) {
 
 			pairWrap := p.getPairByEvent(event)
 			if pairWrap.Pair.Filtered {
-				//log.Logger.Info("pair filter event", zap.String("pair address", pairWrap.Pair.Address.String()), zap.Any("event", event), zap.Any("pair", pairWrap))
 				continue
 			}
 

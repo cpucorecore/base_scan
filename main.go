@@ -73,7 +73,7 @@ func main() {
 	contractCallerArchive := service.NewContractCaller(ethClientArchive, config.G.ContractCaller.Retry.GetRetryParams())
 	priceService := service.NewPriceService(cache, contractCallerArchive, ethClient, config.G.PriceService.PoolSize)
 
-	blockHandlerSequencer := sequencer.NewBlockSequencer()
+	blockSequencerForBlockHandler := sequencer.NewBlockSequencer()
 
 	topicRouter := parser.NewTopicRouter()
 	kafkaSender := service.NewKafkaSender(config.G.Kafka)
@@ -93,7 +93,7 @@ func main() {
 	dbService := service.NewDBService(tokenRepository, pairRepository, txRepository)
 	blockParser := parser.NewBlockParser(
 		cache,
-		blockHandlerSequencer,
+		blockSequencerForBlockHandler,
 		priceService,
 		pairService,
 		topicRouter,
@@ -105,15 +105,15 @@ func main() {
 	wg.Add(1)
 	blockParser.Start(wg)
 
-	blockGetterSequencer := sequencer.NewBlockSequencer()
-	blockGetter := block_getter.NewBlockGetter(ethClient, wsEthClient, cache, blockGetterSequencer, config.G.BlockGetter.Retry.GetRetryParams())
+	blockSequencerForBlockGetter := sequencer.NewBlockSequencer()
+	blockGetter := block_getter.NewBlockGetter(ethClient, wsEthClient, cache, blockSequencerForBlockGetter, config.G.BlockGetter.Retry.GetRetryParams())
 	startBlockNumber := blockGetter.GetStartBlockNumber(config.G.BlockGetter.StartBlockNumber)
 	if startBlockNumber == 0 {
 		log.Logger.Fatal("start block number is zero")
 	}
 
-	blockGetterSequencer.Init(startBlockNumber - 1)
-	blockHandlerSequencer.Init(startBlockNumber - 1)
+	blockSequencerForBlockGetter.Init(startBlockNumber - 1)
+	blockSequencerForBlockHandler.Init(startBlockNumber - 1)
 
 	priceService.Start(startBlockNumber)
 	blockGetter.Start()

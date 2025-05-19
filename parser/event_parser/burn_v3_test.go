@@ -1,9 +1,9 @@
 package event_parser
 
 import (
+	"base_scan/repository/orm"
 	"base_scan/service"
 	"base_scan/types"
-	"base_scan/types/orm"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 	"testing"

@@ -2,8 +2,8 @@ package event
 
 import (
 	"base_scan/parser/event_parser/common"
+	"base_scan/repository/orm"
 	"base_scan/types"
-	"base_scan/types/orm"
 	"github.com/shopspring/decimal"
 	"math/big"
 )

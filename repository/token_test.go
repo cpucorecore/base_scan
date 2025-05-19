@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"base_scan/types/orm"
+	"base_scan/repository/orm"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

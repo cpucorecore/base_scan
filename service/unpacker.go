@@ -36,6 +36,7 @@ var (
 	ErrWrongIntType     = errors.New("wrong int type")
 	ErrWrongBigIntType  = errors.New("wrong big int type")
 	ErrWrongAddressType = errors.New("wrong address type")
+	ErrWrongBoolType    = errors.New("wrong bool type")
 )
 
 func (u *unpacker) Unpack(method string, data []byte, length int) ([]interface{}, error) {
@@ -134,5 +135,5 @@ func ParseBool(value interface{}) (bool, error) {
 	if b, ok := value.(bool); ok {
 		return b, nil
 	}
-	return false, ErrWrongAddressType // TODO fixme
+	return false, ErrWrongBoolType
 }

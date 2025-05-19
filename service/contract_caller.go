@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/shopspring/decimal"
 	"math/big"
 	"strings"
 	"time"
@@ -23,21 +22,21 @@ var (
 	ErrUnpackerNotFound  = errors.New("unpacker not found")
 	ErrOutputEmpty       = errors.New("output is empty")
 	ErrWrongOutputLength = errors.New("wrong output length")
-	ErrReverse0NotBigInt = errors.New("reverse0 is not *big.Int")
-	ErrReverse1NotBigInt = errors.New("reverse1 is not *big.Int")
+	ErrReserve0NotBigInt = errors.New("reverse0 is not *big.Int")
+	ErrReserve1NotBigInt = errors.New("reverse1 is not *big.Int")
 )
 
 type ContractCaller struct {
 	ctx         context.Context
 	ethClient   *ethclient.Client
-	RetryParams *config.RetryParams
+	retryParams *config.RetryParams
 }
 
-func NewContractCaller(ethClient *ethclient.Client, RetryParams *config.RetryParams) *ContractCaller {
+func NewContractCaller(ethClient *ethclient.Client, retryParams *config.RetryParams) *ContractCaller {
 	return &ContractCaller{
 		ctx:         context.Background(),
 		ethClient:   ethClient,
-		RetryParams: RetryParams,
+		retryParams: retryParams,
 	}
 }
 
@@ -74,16 +73,16 @@ func (c *ContractCaller) callContract(req *types.CallContractReq) ([]byte, error
 }
 
 func (c *ContractCaller) CallContract(req *types.CallContractReq) ([]byte, error) {
-	ctxWithTimeout, _ := context.WithTimeout(c.ctx, time.Second*3)
+	ctxWithTimeout, _ := context.WithTimeout(c.ctx, c.retryParams.Timeout)
 	return retry.DoWithData(func() ([]byte, error) {
 		return c.callContract(req)
-	}, c.RetryParams.Attempts, c.RetryParams.Delay, retry.Context(ctxWithTimeout))
+	}, c.retryParams.Attempts, c.retryParams.Delay, retry.Context(ctxWithTimeout))
 }
 
 func (c *ContractCaller) queryValues(address *common.Address, name string, outputLength int) ([]interface{}, error) {
 	req := &types.CallContractReq{
 		Address: address,
-		Data:    types.Name2Data[name],
+		Data:    types.Name2Data[name], // TODO check
 	}
 
 	bytes, err := c.CallContract(req)
@@ -258,7 +257,7 @@ func (c *ContractCaller) CallIsPool(poolAddress *common.Address) (bool, error) {
 
 /*
 callGetReserves
-for uniswap v2
+for uniswap/pancake v2
 */
 func (c *ContractCaller) callGetReserves(blockNumber *big.Int) ([]interface{}, error) {
 	req := types.BuildCallContractReqDynamic(blockNumber, &types.WETHUSDCPairAddressUniswapV2, v2.PairAbi, "getReserves")
@@ -284,21 +283,21 @@ func (c *ContractCaller) callGetReserves(blockNumber *big.Int) ([]interface{}, e
 	return values, nil
 }
 
-func (c *ContractCaller) GetNativeTokenPriceByBlockNumber(blockNumber *big.Int) (decimal.Decimal, error) {
+func (c *ContractCaller) GetReservesByBlockNumber(blockNumber *big.Int) (*big.Int, *big.Int, error) {
 	values, err := c.callGetReserves(blockNumber)
 	if err != nil {
-		return decimal.Zero, err
+		return nil, nil, err
 	}
 
 	reserve0, ok0 := values[0].(*big.Int)
 	if !ok0 {
-		return decimal.Zero, ErrReverse0NotBigInt
+		return nil, nil, ErrReserve0NotBigInt
 	}
 
 	reserve1, ok1 := values[1].(*big.Int)
 	if !ok1 {
-		return decimal.Zero, ErrReverse1NotBigInt
+		return nil, nil, ErrReserve1NotBigInt
 	}
 
-	return decimal.NewFromBigInt(reserve1, -6).Div(decimal.NewFromBigInt(reserve0, -18)), nil
+	return reserve0, reserve1, nil
 }

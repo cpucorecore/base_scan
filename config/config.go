@@ -110,9 +110,9 @@ var (
 			AsyncFlushIntervalBySecond: 1,
 		},
 		Chain: &ChainConf{
-			Endpoint:        "https://ethereum-rpc.publicnode.com",
-			EndpointArchive: "https://ethereum-rpc.publicnode.com",
-			WsEndpoint:      "wss://ethereum-rpc.publicnode.com",
+			Endpoint:        "https://base-rpc.publicnode.com",
+			EndpointArchive: "https://base-rpc.publicnode.com",
+			WsEndpoint:      "wss://base-rpc.publicnode.com",
 		},
 		Redis: &RedisConf{
 			Addr:     "localhost:6379",

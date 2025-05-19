@@ -2,7 +2,7 @@ package service
 
 import (
 	"base_scan/repository"
-	"base_scan/types/orm"
+	"base_scan/repository/orm"
 )
 
 type DBService interface {
