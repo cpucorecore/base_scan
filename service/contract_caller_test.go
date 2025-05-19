@@ -15,6 +15,34 @@ import (
 	"testing"
 )
 
+type TestToken struct {
+	address     common.Address
+	name        string
+	symbol      string
+	decimals    int
+	totalSupply *big.Int
+}
+
+type TestPair struct {
+	address common.Address
+	token0  *TestToken
+	token1  *TestToken
+}
+
+var (
+	tokenWETH = &TestToken{
+		address:     types.WETHAddress,
+		name:        "Wrapped Ether",
+		symbol:      "WETH",
+		decimals:    18,
+		totalSupply: nil,
+	}
+	pairAerodrome = &TestPair{
+		address: common.HexToAddress("0x7f670f78B17dEC44d5Ef68a48740b6f8849cc2e6"),
+		token0:  tokenWETH,
+	}
+)
+
 func TestContractCaller_CallContract(t *testing.T) {
 	cc := GetTestContext().ContractCaller
 	address := common.HexToAddress("0x4200000000000000000000000000000000000006")
@@ -260,87 +288,75 @@ func TestContractCaller_CallIsPool(t *testing.T) {
 	}
 }
 
-func TestContractCaller_ParsePairPancakeV2(t *testing.T) {
+func TestContractCaller_CallToken0AndCallToken1(t *testing.T) {
+	cc := GetTestContext().ContractCaller
+
 	tests := []struct {
-		pairAddress    common.Address
-		expectedToken0 common.Address
-		expectedToken1 common.Address
+		pairAddress   common.Address
+		token0Address common.Address
+		token1Address common.Address
 	}{
 		{
-			pairAddress:    common.HexToAddress("0x00cc8c4549ad70d515d5AA64afd0ac99562d010d"),
-			expectedToken0: common.HexToAddress("0xdcc342647a84d25220e0C4b4cDE3eD39Ff68f099"),
-			expectedToken1: common.HexToAddress("0xF415bec722DF2F14A9F12f357b930529FC6166B2"),
+			pairAddress:   common.HexToAddress("0x7f670f78B17dEC44d5Ef68a48740b6f8849cc2e6"), // aerodrome pair address
+			token0Address: common.HexToAddress("0x4200000000000000000000000000000000000006"),
+			token1Address: common.HexToAddress("0x940181a94A35A4569E4529A3CDfB74e38FD98631"),
+		},
+		{
+			pairAddress:   common.HexToAddress("0x88A43bbDF9D098eEC7bCEda4e2494615dfD9bB9C"), // uniswap v2 pair address
+			token0Address: common.HexToAddress("0x4200000000000000000000000000000000000006"),
+			token1Address: common.HexToAddress("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
+		},
+		{
+			pairAddress:   common.HexToAddress("0x0FB597D6cFE5bE0d5258A7f017599C2A4Ece34c7"), // uniswap v3 pair address
+			token0Address: common.HexToAddress("0x4200000000000000000000000000000000000006"),
+			token1Address: common.HexToAddress("0x52b492a33E447Cdb854c7FC19F1e57E8BfA1777D"),
+		},
+		{
+			pairAddress:   common.HexToAddress("0xc637ab6D3aB0c55a7812B0b23955bA6E40859447"), // pancake v2 pair address
+			token0Address: common.HexToAddress("0x3055913c90Fcc1A6CE9a358911721eEb942013A1"),
+			token1Address: common.HexToAddress("0x4200000000000000000000000000000000000006"),
+		},
+		{
+			pairAddress:   common.HexToAddress("0x54D281c7cc029a9Dd71F9ACb7487dd95B1EecF5a"), // pancake v3 pair address
+			token0Address: common.HexToAddress("0x4200000000000000000000000000000000000006"),
+			token1Address: common.HexToAddress("0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed"),
 		},
 	}
 
-	ethClient, err := ethclient.Dial(config.G.Chain.Endpoint)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cc := NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
-
 	for _, test := range tests {
-		token0, callToken0Err := cc.CallToken0(&test.pairAddress)
-		if callToken0Err != nil {
-			require.Nil(t, callToken0Err)
-		}
-		require.Equal(t, test.expectedToken0, token0)
-
-		token1, callToken1Err := cc.CallToken1(&test.pairAddress)
-		if callToken1Err != nil {
-			require.Nil(t, callToken1Err)
-		}
-		require.Equal(t, test.expectedToken1, token1)
-
-		pairAddress, callErr := cc.CallGetPair(&pancakev2.FactoryAddress, &token0, &token1)
-		if callErr != nil {
-			require.Nil(t, callErr)
-		}
-		require.Equal(t, test.pairAddress, pairAddress)
+		token0Address, err0 := cc.CallToken0(&test.pairAddress)
+		require.Nil(t, err0)
+		require.Equal(t, test.token0Address, token0Address)
+		token1Address, err1 := cc.CallToken1(&test.pairAddress)
+		require.Nil(t, err1)
+		require.Equal(t, test.token1Address, token1Address)
 	}
 }
 
-func TestContractCaller_ParsePairPancakeV3(t *testing.T) {
+func TestContractCaller_CallFee(t *testing.T) {
+	cc := GetTestContext().ContractCaller
+
 	tests := []struct {
-		pairAddress    common.Address
-		expectedToken0 common.Address
-		expectedToken1 common.Address
-		fee            *big.Int
+		callErr     bool
+		pairAddress common.Address
+		expectFee   *big.Int
 	}{
 		{
-			pairAddress:    common.HexToAddress("0x2b303C32c2e8E5B2FA82B69AF1D263C1EBc9ed22"),
-			expectedToken0: common.HexToAddress("0x8519EA49c997f50cefFa444d240fB655e89248Aa"),
-			expectedToken1: common.HexToAddress("0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56"),
-			fee:            big.NewInt(2500),
+			callErr:     false,
+			pairAddress: common.HexToAddress("0x7f670f78B17dEC44d5Ef68a48740b6f8849cc2e6"),
+			expectFee:   big.NewInt(10000),
+		},
+		{
+			callErr:     false,
+			pairAddress: common.HexToAddress("0x0FB597D6cFE5bE0d5258A7f017599C2A4Ece34c7"),
+			expectFee:   big.NewInt(10000),
 		},
 	}
 
-	tc := GetTestContext()
-
 	for _, test := range tests {
-		token0, callToken0Err := tc.ContractCaller.CallToken0(&test.pairAddress)
-		if callToken0Err != nil {
-			require.Nil(t, callToken0Err)
-		}
-		require.Equal(t, test.expectedToken0, token0)
-
-		token1, callToken1Err := tc.ContractCaller.CallToken1(&test.pairAddress)
-		if callToken1Err != nil {
-			require.Nil(t, callToken1Err)
-		}
-		require.Equal(t, test.expectedToken1, token1)
-
-		fee, callFeeErr := tc.ContractCaller.CallFee(&test.pairAddress)
-		if callFeeErr != nil {
-			require.Nil(t, callFeeErr)
-		}
-		require.Equal(t, test.fee, fee)
-
-		pairAddress, callErr := tc.ContractCaller.CallGetPool(&pancakev3.FactoryAddress, &token0, &token1, big.NewInt(2500))
-		if callErr != nil {
-			require.Nil(t, callErr)
-		}
-		require.Equal(t, test.pairAddress, pairAddress)
+		fee, err := cc.CallFee(&test.pairAddress)
+		require.Nil(t, err, test.pairAddress)
+		require.Equal(t, test.expectFee.String(), fee.String(), test.pairAddress)
 	}
 }
 
