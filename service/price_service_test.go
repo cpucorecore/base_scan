@@ -19,7 +19,7 @@ func TestPriceService_GetBNBPrice(t *testing.T) {
 
 	cc := NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
 
-	ps := NewPriceService(c, cc, ethClient, 0)
+	ps := NewPriceService(&c, cc, ethClient, 0)
 	price, err := ps.GetNativeTokenPrice(big.NewInt(22466005))
 	if err != nil {
 		t.Fatal(err)

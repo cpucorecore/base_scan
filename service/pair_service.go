@@ -138,7 +138,7 @@ func (s *pairService) getToken(tokenAddress common.Address) (*types.Token, error
 func (s *pairService) getPairTokens(pair *types.Pair) *types.PairWrap {
 	pairWrap := &types.PairWrap{
 		Pair:    pair,
-		NewPair: true,
+		NewPair: !s.cache.PairExist(pair.Address),
 	}
 
 	var (
@@ -196,9 +196,13 @@ func (s *pairService) getPairTokens(pair *types.Pair) *types.PairWrap {
 }
 
 func (s *pairService) GetPairTokens(pair *types.Pair) *types.PairWrap {
-	pairWrap := s.getPairTokens(pair)
-	s.SetPair(pair)
-	return pairWrap
+	doResult, _, _ := s.group.Do(pair.Address.String(), func() (interface{}, error) {
+		pairWrap := s.getPairTokens(pair)
+		s.SetPair(pair)
+		return pairWrap, nil
+	})
+
+	return doResult.(*types.PairWrap)
 }
 
 func (s *pairService) getPair(pairAddress common.Address, possibleProtocolIds []int) *types.PairWrap {

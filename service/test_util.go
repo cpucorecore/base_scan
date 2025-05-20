@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/go-redis/redis/v8"
 	"github.com/shopspring/decimal"
 	"math/big"
 )
@@ -31,17 +30,14 @@ func GetTestContext() *TestContext {
 	}
 
 	contractCaller := NewContractCaller(ethClient, config.G.ContractCaller.Retry.GetRetryParams())
-	redisCli := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
-	cache := cache.NewTwoTierCache(redisCli)
-	pairService := NewPairService(cache, contractCaller)
+	cache := cache.NewMockCache()
+	pairService_ := NewPairService(cache, contractCaller)
 
 	return &TestContext{
 		ethClient:      ethClient,
 		Cache:          cache,
 		ContractCaller: contractCaller,
-		PairService:    pairService,
+		PairService:    pairService_,
 	}
 }
 

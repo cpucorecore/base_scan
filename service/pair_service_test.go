@@ -1,58 +1,211 @@
 package service
 
 import (
-	"base_scan/cache"
-	"base_scan/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
-func TearDown(c cache.Cache, pairAddress, token0Address, token1Address common.Address) {
-	c.DelPair(pairAddress)
-	c.DelToken(token0Address)
-	c.DelToken(token1Address)
+func TestPairService_GetPair_UniswapV2(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairUniswapV2
+
+	pw := tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+
+	pw = tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
 }
 
-func TestPairService_GetPairAndTokens_PancakeV2_TokenOrdered(t *testing.T) {
+func TestPairService_GetPair_UniswapV3(t *testing.T) {
 	tc := GetTestContext()
-	pairAddress := common.HexToAddress("0x41610B9024bd46e7991c274dbBF9Fc02D36567f2")
-	token0Address := common.HexToAddress("0x0b3e328455c4059EEb9e3f84b5543F74E24e7E1b")
-	token1Address := common.HexToAddress("0x4200000000000000000000000000000000000006")
-	protocolId := types.ProtocolIdPancakeV2
-	protocolIds := []int{protocolId}
-	expectToken0 := &types.TokenCore{
-		Address:  token0Address,
-		Symbol:   "VIRTUAL",
-		Decimals: 18,
-	}
-	expectToken1 := &types.TokenCore{
-		Address:  token1Address,
-		Symbol:   "WETH",
-		Decimals: 18,
-	}
-	expectPair := &types.Pair{
-		Address:        pairAddress,
-		TokensReversed: false,
-		Token0Core:     expectToken0,
-		Token1Core:     expectToken1,
-		ProtocolId:     protocolId,
-		Filtered:       false,
-	}
+	pair := pairUniswapV3
 
-	defer TearDown(tc.Cache, pairAddress, token0Address, token1Address)
+	pw := tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
 
-	pairWrap := tc.PairService.GetPair(pairAddress, protocolIds)
-	require.Equal(t, true, pairWrap.NewPair)
-	require.Equal(t, true, pairWrap.NewToken0)
-	require.Equal(t, true, pairWrap.NewToken1)
-	require.True(t, pairWrap.Pair.Equal(expectPair), "pair equal failed", pairWrap.Pair, expectPair)
-	require.Equal(t, false, pairWrap.Pair.TokensReversed)
+	pw = tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+}
 
-	pairWrapFromCache := tc.PairService.GetPair(pairAddress, protocolIds)
-	require.Equal(t, false, pairWrapFromCache.NewPair)
-	require.Equal(t, false, pairWrapFromCache.NewToken0)
-	require.Equal(t, false, pairWrapFromCache.NewToken1)
-	require.True(t, pairWrapFromCache.Pair.Equal(expectPair))
-	require.Equal(t, false, pairWrapFromCache.Pair.TokensReversed)
+func TestPairService_GetPair_PancakeV2(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairPancakeV2
+
+	pw := tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+
+	pw = tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+}
+
+func TestPairService_GetPair_PancakeV3(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairPancakeV3
+
+	pw := tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+
+	pw = tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+}
+
+func TestPairService_GetPair_Aerodrome(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairAerodrome
+
+	pw := tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+
+	pw = tc.PairService.GetPair(pair.address, possibleProtocolIds)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(pair.GetPair()), "pair should be equal", pw.Pair, pair.GetPair())
+}
+
+func TestPairService_GetGetPairTokens_UniswapV2(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairUniswapV2
+	expectPair := pair.GetPair()
+
+	pairWithoutTokenInfo := pair.GetPairWithoutTokenInfo()
+	pw := tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+
+	pairWithoutTokenInfo = pair.GetPairWithoutTokenInfo()
+	pw = tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+}
+
+func TestPairService_GetGetPairTokens_UniswapV3(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairUniswapV3
+	expectPair := pair.GetPair()
+
+	pairWithoutTokenInfo := pair.GetPairWithoutTokenInfo()
+	pw := tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+
+	pairWithoutTokenInfo = pair.GetPairWithoutTokenInfo()
+	pw = tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+}
+
+func TestPairService_GetGetPairTokens_PancakeV2(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairPancakeV2
+	expectPair := pair.GetPair()
+
+	pairWithoutTokenInfo := pair.GetPairWithoutTokenInfo()
+	pw := tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+
+	pairWithoutTokenInfo = pair.GetPairWithoutTokenInfo()
+	pw = tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+}
+
+func TestPairService_GetGetPairTokens_PancakeV3(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairPancakeV3
+	expectPair := pair.GetPair()
+
+	pairWithoutTokenInfo := pair.GetPairWithoutTokenInfo()
+	pw := tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+
+	pairWithoutTokenInfo = pair.GetPairWithoutTokenInfo()
+	pw = tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+}
+
+func TestPairService_GetGetPairTokens_Aerodrome(t *testing.T) {
+	tc := GetTestContext()
+	pair := pairAerodrome
+	expectPair := pair.GetPair()
+
+	pairWithoutTokenInfo := pair.GetPairWithoutTokenInfo()
+	pw := tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, true, pw.NewPair)
+	require.Equal(t, true, pw.NewToken0)
+	require.Equal(t, true, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
+
+	pairWithoutTokenInfo = pair.GetPairWithoutTokenInfo()
+	pw = tc.PairService.GetPairTokens(pairWithoutTokenInfo)
+	require.False(t, pw.Pair.Filtered, "pair should not be filtered")
+	require.Equal(t, false, pw.NewPair)
+	require.Equal(t, false, pw.NewToken0)
+	require.Equal(t, false, pw.NewToken1)
+	require.True(t, pw.Pair.Equal(expectPair), "pair should be equal", pw.Pair, expectPair)
 }
