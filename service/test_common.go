@@ -3,7 +3,6 @@ package service
 import (
 	"base_scan/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/shopspring/decimal"
 	"math/big"
 )
 
@@ -52,9 +51,7 @@ func (tp *TestPair) GetPair() *types.Pair {
 			Symbol:   tp.token1.symbol,
 			Decimals: tp.token1.decimals,
 		},
-		Token0InitAmount: decimal.Decimal{},
-		Token1InitAmount: decimal.Decimal{},
-		ProtocolId:       tp.protocolId,
+		ProtocolId: tp.protocolId,
 	}
 
 	pair.OrderToken0Token1()

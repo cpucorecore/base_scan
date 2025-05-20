@@ -206,7 +206,7 @@ func (s *pairService) GetPairTokens(pair *types.Pair) *types.PairWrap {
 }
 
 func (s *pairService) getPair(pairAddress common.Address, possibleProtocolIds []int) *types.PairWrap {
-	doResult, _, _ := s.group.Do(pairAddress.String(), func() (interface{}, error) {
+	doResult, _, _ := s.group.Do(pairAddress.String()+"gp", func() (interface{}, error) {
 		pair := s.doGetPair(pairAddress)
 		if pair.Filtered {
 			s.SetPair(pair)
