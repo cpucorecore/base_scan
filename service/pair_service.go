@@ -21,8 +21,8 @@ import (
 
 type PairService interface {
 	SetPair(pair *types.Pair)
-	GetTokens(pair *types.Pair) *types.PairWrap
-	GetPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap
+	GetPairTokens(pair *types.Pair) *types.PairWrap
+	GetPair(pairAddress common.Address, possibleProtocolIds []int) *types.PairWrap
 }
 
 type pairService struct {
@@ -52,9 +52,6 @@ func (s *pairService) doGetToken(tokenAddress common.Address) (*types.Token, err
 		Address: tokenAddress,
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(4)
-
 	var (
 		nameRes struct {
 			name string
@@ -74,6 +71,8 @@ func (s *pairService) doGetToken(tokenAddress common.Address) (*types.Token, err
 		}
 	)
 
+	var wg sync.WaitGroup
+	wg.Add(4)
 	go func() {
 		defer wg.Done()
 		nameRes.name, nameRes.err = s.contractCaller.CallName(&tokenAddress)
@@ -93,7 +92,6 @@ func (s *pairService) doGetToken(tokenAddress common.Address) (*types.Token, err
 		defer wg.Done()
 		supplyRes.supply, supplyRes.err = s.contractCaller.CallTotalSupply(&tokenAddress)
 	}()
-
 	wg.Wait()
 
 	if nameRes.err == nil {
@@ -124,18 +122,20 @@ func (s *pairService) getToken(tokenAddress common.Address) (*types.Token, error
 	}
 
 	now := time.Now()
-	token, err := s.doGetToken(tokenAddress)
-	if err != nil {
+	doResult, err, _ := s.group.Do(tokenAddress.String(), func() (interface{}, error) {
+		token, err := s.doGetToken(tokenAddress)
 		s.cache.SetToken(token)
+		return token, err
+	})
+	if err != nil {
 		return nil, err, false
 	}
-	metrics.GetTokenDurationMs.Observe(time.Since(now).Seconds())
 
-	s.cache.SetToken(token)
-	return token, nil, false
+	metrics.GetTokenDurationMs.Observe(float64(time.Since(now).Milliseconds()))
+	return doResult.(*types.Token), nil, false
 }
 
-func (s *pairService) getTokens(pair *types.Pair) *types.PairWrap {
+func (s *pairService) getPairTokens(pair *types.Pair) *types.PairWrap {
 	pairWrap := &types.PairWrap{
 		Pair:    pair,
 		NewPair: true,
@@ -150,7 +150,6 @@ func (s *pairService) getTokens(pair *types.Pair) *types.PairWrap {
 	)
 
 	wg.Add(2)
-
 	go func() {
 		defer wg.Done()
 		t0, err, fromCache := s.getToken(pair.Token0Core.Address)
@@ -162,7 +161,6 @@ func (s *pairService) getTokens(pair *types.Pair) *types.PairWrap {
 		t1, err, fromCache := s.getToken(pair.Token1Core.Address)
 		token1, token1Err, token1FromCache = t1, err, fromCache
 	}()
-
 	wg.Wait()
 
 	if token0Err != nil {
@@ -197,15 +195,15 @@ func (s *pairService) getTokens(pair *types.Pair) *types.PairWrap {
 	return pairWrap
 }
 
-func (s *pairService) GetTokens(pair *types.Pair) *types.PairWrap {
-	pairWrap := s.getTokens(pair)
+func (s *pairService) GetPairTokens(pair *types.Pair) *types.PairWrap {
+	pairWrap := s.getPairTokens(pair)
 	s.SetPair(pair)
 	return pairWrap
 }
 
-func (s *pairService) getPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap {
-	doResult, _, _ := s.group.Do(address.String(), func() (interface{}, error) {
-		pair := s.getPair(address)
+func (s *pairService) getPair(pairAddress common.Address, possibleProtocolIds []int) *types.PairWrap {
+	doResult, _, _ := s.group.Do(pairAddress.String(), func() (interface{}, error) {
+		pair := s.doGetPair(pairAddress)
 		if pair.Filtered {
 			s.SetPair(pair)
 			return &types.PairWrap{
@@ -216,7 +214,7 @@ func (s *pairService) getPairAndTokens(address common.Address, protocolIds []int
 			}, nil
 		}
 
-		if !s.verifyPair(pair, protocolIds) {
+		if !s.verifyPair(pair, possibleProtocolIds) {
 			s.SetPair(pair)
 			return &types.PairWrap{
 				Pair:      pair,
@@ -226,30 +224,27 @@ func (s *pairService) getPairAndTokens(address common.Address, protocolIds []int
 			}, nil
 		}
 
-		return s.GetTokens(pair), nil
+		return s.GetPairTokens(pair), nil
 	})
 
 	return doResult.(*types.PairWrap)
 }
 
-func (s *pairService) GetPairAndTokens(address common.Address, protocolIds []int) *types.PairWrap {
-	cachePair, ok := s.cache.GetPair(address)
+func (s *pairService) GetPair(pairAddress common.Address, possibleProtocolIds []int) *types.PairWrap {
+	cachePair, ok := s.cache.GetPair(pairAddress)
 	if ok {
 		return &types.PairWrap{
 			Pair: cachePair,
 		}
 	}
 
-	return s.getPairAndTokens(address, protocolIds)
+	return s.getPair(pairAddress, possibleProtocolIds)
 }
 
-func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
+func (s *pairService) doGetPair(pairAddress common.Address) *types.Pair {
 	pair := &types.Pair{
 		Address: pairAddress,
 	}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
 
 	var (
 		token0Res struct {
@@ -262,6 +257,9 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 		}
 	)
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+	now := time.Now()
 	go func() {
 		defer wg.Done()
 		token0Res.address, token0Res.err = s.contractCaller.CallToken0(&pairAddress)
@@ -271,13 +269,13 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 		defer wg.Done()
 		token1Res.address, token1Res.err = s.contractCaller.CallToken1(&pairAddress)
 	}()
-
 	wg.Wait()
 
 	if token0Res.err != nil {
 		log.Logger.Info("Err: CallToken0 err, this pair will filtered",
 			zap.Error(token0Res.err),
-			zap.String("address", pairAddress.String()))
+			zap.String("pair address", pairAddress.String()),
+		)
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetToken0
 		return pair
@@ -289,7 +287,8 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 	if token1Res.err != nil {
 		log.Logger.Info("Err: CallToken1 err, this pair will filtered",
 			zap.Error(token1Res.err),
-			zap.String("address", pairAddress.String()))
+			zap.String("pair address", pairAddress.String()),
+		)
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeGetToken1
 		return pair
@@ -298,14 +297,14 @@ func (s *pairService) getPair(pairAddress common.Address) *types.Pair {
 		Address: token1Res.address,
 	}
 
+	metrics.GetPairDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 	pair.FilterByToken0AndToken1()
-
 	return pair
 }
 
 func (s *pairService) verifyPairV2(pairFactoryAddress common.Address, pair *types.Pair) bool {
-	pairAddressQueried, getPairErr := s.contractCaller.CallGetPair(&pairFactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address)
-	if getPairErr != nil {
+	pairAddressQueried, err := s.contractCaller.CallGetPair(&pairFactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address)
+	if err != nil {
 		return false
 	}
 	return types.IsSameAddress(pairAddressQueried, pair.Address)
@@ -317,8 +316,8 @@ func (s *pairService) verifyPairV3(pairFactoryAddress common.Address, pair *type
 		return false
 	}
 
-	pairAddressQueried, getPairErr := s.contractCaller.CallGetPool(&pairFactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address, fee)
-	if getPairErr != nil {
+	pairAddressQueried, err := s.contractCaller.CallGetPool(&pairFactoryAddress, &pair.Token0Core.Address, &pair.Token1Core.Address, fee)
+	if err != nil {
 		return false
 	}
 
@@ -326,6 +325,7 @@ func (s *pairService) verifyPairV3(pairFactoryAddress common.Address, pair *type
 }
 
 func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
+	now := time.Now()
 	for _, protocolId := range protocolIds {
 		switch protocolId {
 		case types.ProtocolIdUniswapV2:
@@ -367,5 +367,7 @@ func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
 
 	pair.Filtered = true
 	pair.FilterCode = types.FilterCodeVerifyFailed
+
+	metrics.VerifyPairDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 	return false
 }

@@ -17,7 +17,7 @@ func TestBurn_UniswapV3(t *testing.T) {
 	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
 	require.NoError(t, pErr)
 
-	pairWrap := tc.PairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
 	event.SetPair(pairWrap.Pair)
 
 	tx := event.GetTx(decimal.NewFromFloat(582.8979382022061794))

@@ -21,7 +21,7 @@ func TestPoolCreated_UniswapV3(t *testing.T) {
 	event.SetBlockTime(time.Unix(int64(blockTimestamp), 0))
 	require.True(t, event.CanGetPair())
 	pair := event.GetPair()
-	pairWrap := tc.PairService.GetTokens(pair)
+	pairWrap := tc.PairService.GetPairTokens(pair)
 	event.SetPair(pairWrap.Pair)
 
 	expectPair := &types.Pair{
@@ -59,7 +59,7 @@ func TestPoolCreated_PancakeV3(t *testing.T) {
 	event.SetBlockTime(time.Unix(int64(blockTimestamp), 0))
 	require.True(t, event.CanGetPair())
 	pair := event.GetPair()
-	pairWrap := tc.PairService.GetTokens(pair)
+	pairWrap := tc.PairService.GetPairTokens(pair)
 	event.SetPair(pairWrap.Pair)
 
 	expectPair := &types.Pair{

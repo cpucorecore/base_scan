@@ -192,10 +192,10 @@ func (p *blockParser) getPairByEvent(event types.Event) *types.PairWrap {
 			}
 		}
 
-		return p.pairService.GetTokens(pair)
+		return p.pairService.GetPairTokens(pair)
 	}
 
-	return p.pairService.GetPairAndTokens(event.GetPairAddress(), event.GetPossibleProtocolIds())
+	return p.pairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
 }
 
 func (p *blockParser) commitBlockResult(blockResult *types.BlockResult) {
@@ -218,7 +218,7 @@ func (p *blockParser) commitBlockResultOld(blockResult *types.BlockResult) {
 		p.dbService.AddTxs(msg.Txs)
 	}
 	duration := time.Since(now)
-	metrics.DbOperationDurationMs.Observe(duration.Seconds())
+	metrics.DbOperationDurationMs.Observe(float64(duration.Milliseconds()))
 	log.Logger.Info("db operation duration",
 		zap.Uint64("block", blockResult.Height),
 		zap.Float64("duration", duration.Seconds()),

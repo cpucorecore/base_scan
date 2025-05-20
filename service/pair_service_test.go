@@ -42,14 +42,14 @@ func TestPairService_GetPairAndTokens_PancakeV2_TokenOrdered(t *testing.T) {
 
 	defer TearDown(tc.Cache, pairAddress, token0Address, token1Address)
 
-	pairWrap := tc.PairService.GetPairAndTokens(pairAddress, protocolIds)
+	pairWrap := tc.PairService.GetPair(pairAddress, protocolIds)
 	require.Equal(t, true, pairWrap.NewPair)
 	require.Equal(t, true, pairWrap.NewToken0)
 	require.Equal(t, true, pairWrap.NewToken1)
 	require.True(t, pairWrap.Pair.Equal(expectPair), "pair equal failed", pairWrap.Pair, expectPair)
 	require.Equal(t, false, pairWrap.Pair.TokensReversed)
 
-	pairWrapFromCache := tc.PairService.GetPairAndTokens(pairAddress, protocolIds)
+	pairWrapFromCache := tc.PairService.GetPair(pairAddress, protocolIds)
 	require.Equal(t, false, pairWrapFromCache.NewPair)
 	require.Equal(t, false, pairWrapFromCache.NewToken0)
 	require.Equal(t, false, pairWrapFromCache.NewToken1)

@@ -69,9 +69,9 @@ var (
 		Objectives: defaultObjectives,
 	})
 
-	BlockDelayMs = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "block_delay_ms",
-		Help:       "block delay in Milliseconds",
+	BlockDelay = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "block_delay",
+		Help:       "block delay in Seconds",
 		MaxAge:     defaultMaxAge,
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
@@ -84,15 +84,15 @@ var (
 		Objectives: defaultObjectives,
 	})
 
-	GetV2PairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "get_v2_pair_duration_ms",
+	GetPairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "get_pair_duration_ms",
 		MaxAge:     defaultMaxAge,
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
 	})
 
-	GetV3PairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "get_v3_pair_duration_ms",
+	VerifyPairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "verify_pair_duration_ms",
 		MaxAge:     defaultMaxAge,
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
@@ -118,10 +118,10 @@ func init() {
 	prometheus.MustRegister(SendBlockKafkaDurationMs)
 
 	prometheus.MustRegister(CallContractDurationMs)
-	prometheus.MustRegister(BlockDelayMs)
+	prometheus.MustRegister(BlockDelay)
 	prometheus.MustRegister(CallContractForNativeTokenPriceDurationMs)
-	prometheus.MustRegister(GetV2PairDurationMs)
-	prometheus.MustRegister(GetV3PairDurationMs)
+	prometheus.MustRegister(GetPairDurationMs)
+	prometheus.MustRegister(VerifyPairDurationMs)
 	prometheus.MustRegister(GetTokenDurationMs)
 }
 

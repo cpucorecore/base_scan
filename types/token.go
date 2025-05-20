@@ -29,12 +29,12 @@ func IsWETH(address common.Address) bool {
 	return IsSameAddress(address, WETHAddress)
 }
 
-func IsUSD(address common.Address) bool {
+func IsUSDC(address common.Address) bool {
 	return IsSameAddress(address, USDCAddress)
 }
 
 func IsBaseToken(address common.Address) bool {
-	if IsWETH(address) || IsUSD(address) {
+	if IsWETH(address) || IsUSDC(address) {
 		return true
 	}
 	return false

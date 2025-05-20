@@ -75,7 +75,7 @@ func (bg *blockGetter) getBlock(blockNumber uint64) (*types.ParseBlockContext, e
 		return nil, getBlockErr
 	}
 	duration := time.Since(now)
-	metrics.GetBlockDurationMs.Observe(duration.Seconds())
+	metrics.GetBlockDurationMs.Observe(float64(duration.Milliseconds()))
 
 	now = time.Now()
 	blockReceipts, getBlockReceiptErr := bg.ethClient.BlockReceipts(context.Background(), rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(blockNumber)))
@@ -83,8 +83,8 @@ func (bg *blockGetter) getBlock(blockNumber uint64) (*types.ParseBlockContext, e
 		return nil, getBlockReceiptErr
 	}
 	duration = time.Since(now)
-	metrics.GetBlockReceiptsDurationMs.Observe(duration.Seconds())
-	metrics.BlockDelayMs.Observe(time.Now().Sub(time.Unix((int64)(block.Time()), 0)).Seconds())
+	metrics.GetBlockReceiptsDurationMs.Observe(float64(duration.Milliseconds()))
+	metrics.BlockDelay.Observe(time.Now().Sub(time.Unix((int64)(block.Time()), 0)).Seconds())
 	return &types.ParseBlockContext{
 		Block:            block,
 		BlockReceipts:    blockReceipts,

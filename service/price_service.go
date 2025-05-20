@@ -86,14 +86,12 @@ func (ps *priceService) GetNativeTokenPrice(blockNumber *big.Int) (decimal.Decim
 
 func (ps *priceService) getNativeTokenPrice(blockNumber *big.Int) (decimal.Decimal, error) {
 	now := time.Now()
-
 	reserve0, reserve1, err := ps.contractCaller.GetReservesByBlockNumber(blockNumber)
 	if err != nil {
 		log.Logger.Error("GetReservesByBlockNumber err", zap.Error(err), zap.Uint64("blockNumber", blockNumber.Uint64()))
 		return types.ZeroDecimal, err
 	}
-
-	metrics.CallContractForNativeTokenPriceDurationMs.Observe(time.Since(now).Seconds())
+	metrics.CallContractForNativeTokenPriceDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 
 	// TODO get pair info
 	USDCAmountDivWETHAmount := decimal.NewFromBigInt(reserve1, -6).Div(decimal.NewFromBigInt(reserve0, -18))

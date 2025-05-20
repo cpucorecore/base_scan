@@ -127,7 +127,7 @@ func (p *Pair) OrderToken0Token1() bool {
 	token1IsBaseToken := IsBaseToken(p.Token1Core.Address)
 
 	if token0IsBaseToken && token1IsBaseToken {
-		if IsUSD(p.Token0Core.Address) {
+		if IsUSDC(p.Token0Core.Address) {
 			p.swapToken0Token1()
 		}
 	} else if !token0IsBaseToken && !token1IsBaseToken {

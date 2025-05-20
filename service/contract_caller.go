@@ -60,7 +60,7 @@ func (c *ContractCaller) callContract(req *types.CallContractReq) ([]byte, error
 		},
 		req.BlockNumber,
 	)
-	metrics.CallContractDurationMs.Observe(time.Since(now).Seconds())
+	metrics.CallContractDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 
 	if err != nil {
 		if IsRetryableErr(err) {
@@ -168,7 +168,7 @@ CallGetPair
 for uniswap/pancake v2
 */
 func (c *ContractCaller) CallGetPair(factoryAddress, token0Address, token1Address *common.Address) (common.Address, error) {
-	req := types.BuildCallContractReqDynamic(nil, factoryAddress, v2.FactoryAbi, "getPair", token0Address, token1Address)
+	req := types.BuildCallContractReqDynamic(nil, factoryAddress, v2.FactoryAbi, "doGetPair", token0Address, token1Address)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
@@ -179,7 +179,7 @@ func (c *ContractCaller) CallGetPair(factoryAddress, token0Address, token1Addres
 		return types.ZeroAddress, ErrOutputEmpty
 	}
 
-	values, unpackErr := PancakeV2FactoryUnpacker.Unpack("getPair", bytes, 1)
+	values, unpackErr := PancakeV2FactoryUnpacker.Unpack("doGetPair", bytes, 1)
 	if unpackErr != nil {
 		return types.ZeroAddress, unpackErr
 	}
