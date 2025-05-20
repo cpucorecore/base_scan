@@ -127,7 +127,7 @@ func main() {
 		blockGetter.Stop()
 	}()
 
-	var blockCtx *types.BlockContext
+	var blockCtx *types.ParseBlockContext
 	for {
 		blockCtx = blockGetter.Next()
 		if blockCtx == nil {

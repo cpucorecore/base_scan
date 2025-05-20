@@ -27,14 +27,14 @@ type BlockGetter interface {
 	StartDispatch(startBlockNumber uint64)
 	Stop()
 	GetBlockAsync(blockNumber uint64)
-	Next() *types.BlockContext
+	Next() *types.ParseBlockContext
 }
 
 type blockGetter struct {
 	ethClient       *ethclient.Client
 	wsEthClient     *ethclient.Client
 	inputQueue      chan uint64
-	outputBuffer    chan *types.BlockContext
+	outputBuffer    chan *types.ParseBlockContext
 	workPool        *ants.Pool
 	cache           cache.BlockCache
 	stopped         SafeVar[bool]
@@ -59,7 +59,7 @@ func NewBlockGetter(ethClient *ethclient.Client,
 		ethClient:       ethClient,
 		wsEthClient:     wsEthClient,
 		inputQueue:      make(chan uint64, config.G.BlockGetter.QueueSize),
-		outputBuffer:    make(chan *types.BlockContext, 10),
+		outputBuffer:    make(chan *types.ParseBlockContext, 10),
 		workPool:        workPool,
 		cache:           cache,
 		blockHeaderChan: make(chan *ethtypes.Header, 100),
@@ -68,14 +68,14 @@ func NewBlockGetter(ethClient *ethclient.Client,
 	}
 }
 
-func (bg *blockGetter) getBlock(blockNumber uint64) (*types.BlockContext, error) {
+func (bg *blockGetter) getBlock(blockNumber uint64) (*types.ParseBlockContext, error) {
 	now := time.Now()
 	block, getBlockErr := bg.ethClient.BlockByNumber(context.Background(), big.NewInt(int64(blockNumber)))
 	if getBlockErr != nil {
 		return nil, getBlockErr
 	}
 	duration := time.Since(now)
-	metrics.GetBlockDuration.Observe(duration.Seconds())
+	metrics.GetBlockDurationMs.Observe(duration.Seconds())
 
 	now = time.Now()
 	blockReceipts, getBlockReceiptErr := bg.ethClient.BlockReceipts(context.Background(), rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(blockNumber)))
@@ -83,9 +83,9 @@ func (bg *blockGetter) getBlock(blockNumber uint64) (*types.BlockContext, error)
 		return nil, getBlockReceiptErr
 	}
 	duration = time.Since(now)
-	metrics.GetBlockReceiptsDuration.Observe(duration.Seconds())
-	metrics.BlockDelay.Observe(time.Now().Sub(time.Unix((int64)(block.Time()), 0)).Seconds())
-	return &types.BlockContext{
+	metrics.GetBlockReceiptsDurationMs.Observe(duration.Seconds())
+	metrics.BlockDelayMs.Observe(time.Now().Sub(time.Unix((int64)(block.Time()), 0)).Seconds())
+	return &types.ParseBlockContext{
 		Block:            block,
 		BlockReceipts:    blockReceipts,
 		HeightTime:       types.GetBlockHeightTime(block.Header()),
@@ -93,8 +93,8 @@ func (bg *blockGetter) getBlock(blockNumber uint64) (*types.BlockContext, error)
 	}, nil
 }
 
-func (bg *blockGetter) getBlockWithRetry(blockNumber uint64) (*types.BlockContext, error) {
-	return retry.DoWithData(func() (*types.BlockContext, error) {
+func (bg *blockGetter) getBlockWithRetry(blockNumber uint64) (*types.ParseBlockContext, error) {
+	return retry.DoWithData(func() (*types.ParseBlockContext, error) {
 		return bg.getBlock(blockNumber)
 	}, bg.retryParams.Attempts, bg.retryParams.Delay)
 }
@@ -103,7 +103,7 @@ func (bg *blockGetter) GetBlockAsync(blockNumber uint64) {
 	bg.inputQueue <- blockNumber
 }
 
-func (bg *blockGetter) Next() *types.BlockContext {
+func (bg *blockGetter) Next() *types.ParseBlockContext {
 	return <-bg.outputBuffer
 }
 

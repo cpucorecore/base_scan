@@ -129,7 +129,7 @@ func (s *pairService) getToken(tokenAddress common.Address) (*types.Token, error
 		s.cache.SetToken(token)
 		return nil, err, false
 	}
-	metrics.GetTokenDuration.Observe(time.Since(now).Seconds())
+	metrics.GetTokenDurationMs.Observe(time.Since(now).Seconds())
 
 	s.cache.SetToken(token)
 	return token, nil, false
@@ -240,8 +240,7 @@ func (s *pairService) GetPairAndTokens(address common.Address, protocolIds []int
 		}
 	}
 
-	pairWrap := s.getPairAndTokens(address, protocolIds)
-	return pairWrap
+	return s.getPairAndTokens(address, protocolIds)
 }
 
 func (s *pairService) getPair(pairAddress common.Address) *types.Pair {

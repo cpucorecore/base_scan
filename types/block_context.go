@@ -27,7 +27,7 @@ func GetBlockHeightTime(header *ethtypes.Header) *BlockHeightTime {
 	}
 }
 
-type BlockContext struct {
+type ParseBlockContext struct {
 	// input
 	Block            *ethtypes.Block
 	BlockReceipts    []*ethtypes.Receipt
@@ -38,11 +38,11 @@ type BlockContext struct {
 	BlockResult *BlockResult
 }
 
-func (c *BlockContext) GetBlockNumber() uint64 {
+func (c *ParseBlockContext) GetBlockNumber() uint64 {
 	return c.HeightTime.Height
 }
 
-func (c *BlockContext) GetTxSender(txIndex uint) (common.Address, error) {
+func (c *ParseBlockContext) GetTxSender(txIndex uint) (common.Address, error) {
 	if txSender, ok := c.TxIndex2TxSender[txIndex]; ok {
 		return txSender, nil
 	}

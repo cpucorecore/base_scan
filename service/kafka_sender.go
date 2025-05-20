@@ -77,7 +77,7 @@ func (c *kafkaSender) Send(block *types.EthBlock) error {
 		Topic: c.conf.Topic,
 		Value: sarama.ByteEncoder(data),
 	}
-	metrics.SendBlockKafkaDuration.Observe(time.Since(now).Seconds())
+	metrics.SendBlockKafkaDurationMs.Observe(time.Since(now).Seconds())
 
 	return nil
 }
@@ -93,7 +93,7 @@ func (c *kafkaSender) SendOld(block *types.EthBlockOld) error {
 		Topic: c.conf.Topic,
 		Value: sarama.ByteEncoder(data),
 	}
-	metrics.SendBlockKafkaDuration.Observe(time.Since(now).Seconds())
+	metrics.SendBlockKafkaDurationMs.Observe(time.Since(now).Seconds())
 
 	return nil
 }

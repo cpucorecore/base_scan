@@ -9,135 +9,100 @@ import (
 )
 
 var (
+	defaultMaxAge     = time.Second * 10
+	defaultAgeBuckets = uint32(60)
+	defaultObjectives = map[float64]float64{
+		0.9:  0.01,
+		0.99: 0.001,
+	}
+)
+
+var (
 	CurrentHeight = prometheus.NewGauge(prometheus.GaugeOpts{Name: "current_height"})
 	NewestHeight  = prometheus.NewGauge(prometheus.GaugeOpts{Name: "newest_height"})
 
-	GetBlockDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "get_block_duration",
-		Help:       "get_block duration in seconds",
-		MaxAge:     time.Minute,
-		AgeBuckets: 20,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	GetBlockDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "get_block_duration_ms",
+		Help:       "get_block duration in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	GetBlockReceiptsDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "get_block_receipts_duration",
-		Help:       "get block receipts duration in seconds",
-		MaxAge:     time.Minute,
-		AgeBuckets: 20,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	GetBlockReceiptsDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "get_block_receipts_duration_ms",
+		Help:       "get block receipts duration in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	DbOperationDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "db_operation_duration",
-		Help:       "db operation duration in seconds",
-		MaxAge:     time.Minute,
-		AgeBuckets: 20,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	DbOperationDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "db_operation_duration_ms",
+		Help:       "db operation duration in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	ParseBlockDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "parse_block_duration",
-		Help:       "parse block duration in seconds",
-		MaxAge:     time.Minute,
-		AgeBuckets: 20,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	ParseBlockDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "parse_block_duration_ms",
+		Help:       "parse block duration in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	SendBlockKafkaDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "send_block_kafka_duration",
-		Help:       "send block kafka duration in seconds",
-		MaxAge:     time.Minute,
-		AgeBuckets: 20,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	SendBlockKafkaDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "send_block_kafka_duration_ms",
+		Help:       "send block kafka duration in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	CallContractDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "call_contract_duration",
-		Help:       "call contract duration in seconds",
-		MaxAge:     time.Minute,
-		AgeBuckets: 100,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	CallContractDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "call_contract_duration_ms",
+		Help:       "call contract duration in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	BlockDelay = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "block_delay",
-		Help:       "block delay in seconds",
-		MaxAge:     time.Minute,
-		AgeBuckets: 20,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	BlockDelayMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "block_delay_ms",
+		Help:       "block delay in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	CallContractForNativeTokenPrice = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "call_contract_price",
-		MaxAge:     time.Minute,
-		AgeBuckets: 20,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	CallContractForNativeTokenPriceDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "call_contract_price_duration_ms",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	GetV2PairDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "get_v2_pair_duration",
-		MaxAge:     time.Minute * 10,
-		AgeBuckets: 100,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	GetV2PairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "get_v2_pair_duration_ms",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	GetV3PairDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "get_v3_pair_duration",
-		MaxAge:     time.Minute * 10,
-		AgeBuckets: 100,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	GetV3PairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "get_v3_pair_duration_ms",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 
-	GetTokenDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "get_token_duration",
-		MaxAge:     time.Minute * 10,
-		AgeBuckets: 100,
-		Objectives: map[float64]float64{
-			0.5:  0.05,
-			0.9:  0.01,
-			0.99: 0.001,
-		},
+	GetTokenDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "get_token_duration_ms",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
 	})
 )
 
@@ -145,19 +110,19 @@ func init() {
 	prometheus.MustRegister(CurrentHeight)
 	prometheus.MustRegister(NewestHeight)
 
-	prometheus.MustRegister(GetBlockDuration)
-	prometheus.MustRegister(GetBlockReceiptsDuration)
+	prometheus.MustRegister(GetBlockDurationMs)
+	prometheus.MustRegister(GetBlockReceiptsDurationMs)
 
-	prometheus.MustRegister(DbOperationDuration)
-	prometheus.MustRegister(ParseBlockDuration)
-	prometheus.MustRegister(SendBlockKafkaDuration)
+	prometheus.MustRegister(DbOperationDurationMs)
+	prometheus.MustRegister(ParseBlockDurationMs)
+	prometheus.MustRegister(SendBlockKafkaDurationMs)
 
-	prometheus.MustRegister(CallContractDuration)
-	prometheus.MustRegister(BlockDelay)
-	prometheus.MustRegister(CallContractForNativeTokenPrice)
-	prometheus.MustRegister(GetV2PairDuration)
-	prometheus.MustRegister(GetV3PairDuration)
-	prometheus.MustRegister(GetTokenDuration)
+	prometheus.MustRegister(CallContractDurationMs)
+	prometheus.MustRegister(BlockDelayMs)
+	prometheus.MustRegister(CallContractForNativeTokenPriceDurationMs)
+	prometheus.MustRegister(GetV2PairDurationMs)
+	prometheus.MustRegister(GetV3PairDurationMs)
+	prometheus.MustRegister(GetTokenDurationMs)
 }
 
 func init() {

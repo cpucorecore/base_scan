@@ -20,15 +20,15 @@ import (
 type BlockParser interface {
 	Start(*sync.WaitGroup)
 	Stop()
-	ParseBlockAsync(bw *types.BlockContext)
+	ParseBlockAsync(bw *types.ParseBlockContext)
 }
 
 type blockParser struct {
-	inputQueue   chan *types.BlockContext
+	inputQueue   chan *types.ParseBlockContext
 	workPool     *ants.Pool
 	cache        cache.BlockCache
 	sequencer    sequencer.BlockSequencer
-	outputQueue  chan *types.BlockContext
+	outputQueue  chan *types.ParseBlockContext
 	priceService service.PriceService
 	pairService  service.PairService
 	topicRouter  TopicRouter
@@ -53,11 +53,11 @@ func NewBlockParser(
 	}
 
 	return &blockParser{
-		inputQueue:   make(chan *types.BlockContext, config.G.BlockHandler.QueueSize),
+		inputQueue:   make(chan *types.ParseBlockContext, config.G.BlockHandler.QueueSize),
 		workPool:     workPool,
 		cache:        cache,
 		sequencer:    sequencer,
-		outputQueue:  make(chan *types.BlockContext, config.G.BlockHandler.QueueSize),
+		outputQueue:  make(chan *types.ParseBlockContext, config.G.BlockHandler.QueueSize),
 		priceService: priceService,
 		pairService:  pairService,
 		topicRouter:  topicRouter,
@@ -75,7 +75,7 @@ func (p *blockParser) Start(waitGroup *sync.WaitGroup) {
 	tagFor:
 		for {
 			select {
-			case bCtx, ok := <-p.inputQueue:
+			case pbc, ok := <-p.inputQueue:
 				if !ok {
 					log.Logger.Info("block handler inputQueue is closed")
 					break tagFor
@@ -84,17 +84,13 @@ func (p *blockParser) Start(waitGroup *sync.WaitGroup) {
 				wg.Add(1)
 				p.workPool.Submit(func() {
 					defer wg.Done()
-					now := time.Now()
-					p.parseBlock(bCtx)
-					duration := time.Since(now)
-					metrics.ParseBlockDuration.Observe(duration.Seconds())
-					log.Logger.Info(fmt.Sprintf("parse block %d duration %dms", bCtx.HeightTime.HeightBigInt, duration.Milliseconds()))
+					p.parseBlock(pbc)
 				})
 			}
 		}
 
 		wg.Wait()
-		log.Logger.Info("all block handle task finish")
+		log.Logger.Info("all block parse task finish")
 		p.doStop()
 	}()
 }
@@ -103,7 +99,7 @@ func (p *blockParser) Stop() {
 	close(p.inputQueue)
 }
 
-func (p *blockParser) ParseBlockAsync(bw *types.BlockContext) {
+func (p *blockParser) ParseBlockAsync(bw *types.ParseBlockContext) {
 	p.inputQueue <- bw
 }
 
@@ -135,16 +131,17 @@ func collectNewPairAndTokens(br *types.BlockResult, pairWrap *types.PairWrap) {
 	}
 }
 
-func (p *blockParser) parseBlock(blockCtx *types.BlockContext) {
-	blockCtx.NativeTokenPrice = p.waitForNativeTokenPrice(blockCtx.HeightTime.HeightBigInt)
+func (p *blockParser) parseBlock(pbc *types.ParseBlockContext) {
+	pbc.NativeTokenPrice = p.waitForNativeTokenPrice(pbc.HeightTime.HeightBigInt)
 
-	br := types.NewBlockResult(blockCtx.HeightTime.HeightBigInt.Uint64(), blockCtx.HeightTime.Timestamp, blockCtx.NativeTokenPrice)
-	for _, receipt := range blockCtx.BlockReceipts {
+	now := time.Now()
+	br := types.NewBlockResult(pbc.HeightTime.HeightBigInt.Uint64(), pbc.HeightTime.Timestamp, pbc.NativeTokenPrice)
+	for _, receipt := range pbc.BlockReceipts {
 		if receipt.Status != 1 {
 			continue
 		}
 
-		txSender, err := blockCtx.GetTxSender(receipt.TransactionIndex)
+		txSender, err := pbc.GetTxSender(receipt.TransactionIndex)
 		if err != nil {
 			log.Logger.Info("Waring: get tx sender err", zap.Error(err))
 			continue
@@ -168,14 +165,18 @@ func (p *blockParser) parseBlock(blockCtx *types.BlockContext) {
 
 			collectNewPairAndTokens(br, pairWrap)
 			event.SetPair(pairWrap.Pair)
-			event.SetBlockTime(blockCtx.HeightTime.Time)
+			event.SetBlockTime(pbc.HeightTime.Time)
 			tr.AddEvent(event)
 		}
 		br.AddTxResult(tr)
 	}
 
-	blockCtx.BlockResult = br
-	p.sequencer.Commit(blockCtx, p.outputQueue)
+	duration := time.Since(now)
+	metrics.ParseBlockDurationMs.Observe(float64(duration.Milliseconds()))
+	log.Logger.Info(fmt.Sprintf("parse block %d duration %dms", pbc.HeightTime.HeightBigInt, duration.Milliseconds()))
+
+	pbc.BlockResult = br
+	p.sequencer.Commit(pbc, p.outputQueue)
 }
 
 func (p *blockParser) getPairByEvent(event types.Event) *types.PairWrap {
@@ -217,7 +218,7 @@ func (p *blockParser) commitBlockResultOld(blockResult *types.BlockResult) {
 		p.dbService.AddTxs(msg.Txs)
 	}
 	duration := time.Since(now)
-	metrics.DbOperationDuration.Observe(duration.Seconds())
+	metrics.DbOperationDurationMs.Observe(duration.Seconds())
 	log.Logger.Info("db operation duration",
 		zap.Uint64("block", blockResult.Height),
 		zap.Float64("duration", duration.Seconds()),

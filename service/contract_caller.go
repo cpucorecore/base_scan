@@ -60,7 +60,7 @@ func (c *ContractCaller) callContract(req *types.CallContractReq) ([]byte, error
 		},
 		req.BlockNumber,
 	)
-	metrics.CallContractDuration.Observe(time.Since(now).Seconds())
+	metrics.CallContractDurationMs.Observe(time.Since(now).Seconds())
 
 	if err != nil {
 		if IsRetryableErr(err) {

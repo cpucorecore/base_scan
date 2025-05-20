@@ -10,7 +10,7 @@ import (
 
 type BlockSequencer interface {
 	Init(height uint64)
-	Commit(bc *types.BlockContext, output chan *types.BlockContext)
+	Commit(bc *types.ParseBlockContext, output chan *types.ParseBlockContext)
 }
 
 type blockSequencer struct {
@@ -37,7 +37,7 @@ func (s *blockSequencer) Init(height uint64) {
 	}
 }
 
-func (s *blockSequencer) Commit(blockContext *types.BlockContext, outputChan chan *types.BlockContext) {
+func (s *blockSequencer) Commit(blockContext *types.ParseBlockContext, outputChan chan *types.ParseBlockContext) {
 	if !s.active {
 		outputChan <- blockContext
 		return
