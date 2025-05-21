@@ -1,4 +1,4 @@
-package common
+package event
 
 import (
 	"base_scan/types"

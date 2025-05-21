@@ -17,14 +17,14 @@ type SwapEventParser struct {
 	PoolEventParser
 }
 
-func (o *SwapEventParser) Parse(receiptLog *ethtypes.Log) (types.Event, error) {
-	eventInput, err := o.EventInputParser.Parse(receiptLog)
+func (o *SwapEventParser) Parse(ethLog *ethtypes.Log) (types.Event, error) {
+	eventInput, err := o.ethLogUnpacker.Unpack(ethLog)
 	if err != nil {
 		return nil, err
 	}
 
 	e := &event.SwapEvent{
-		EventCommon:   types.EventCommonFromEthLog(receiptLog),
+		EventCommon:   types.EventCommonFromEthLog(ethLog),
 		Amount0InWei:  eventInput[0].(*big.Int),
 		Amount1InWei:  eventInput[1].(*big.Int),
 		Amount0OutWei: eventInput[2].(*big.Int),
@@ -40,7 +40,7 @@ func (o *SwapEventParser) Parse(receiptLog *ethtypes.Log) (types.Event, error) {
 	}
 
 	e.Pair = &types.Pair{
-		Address: receiptLog.Address,
+		Address: ethLog.Address,
 	}
 
 	e.PossibleProtocolIds = o.PossibleProtocolIds

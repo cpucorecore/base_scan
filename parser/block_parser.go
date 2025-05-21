@@ -148,12 +148,12 @@ func (p *blockParser) parseBlock(pbc *types.ParseBlockContext) {
 		}
 
 		tr := types.NewTxResult(txSender)
-		for _, receiptLog := range receipt.Logs {
-			if len(receiptLog.Topics) == 0 {
+		for _, ethLog := range receipt.Logs {
+			if len(ethLog.Topics) == 0 {
 				continue
 			}
 
-			event, parseErr := p.topicRouter.Parse(receiptLog)
+			event, parseErr := p.topicRouter.Parse(ethLog)
 			if parseErr != nil {
 				continue
 			}

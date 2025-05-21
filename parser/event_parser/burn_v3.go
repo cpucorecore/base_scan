@@ -11,20 +11,20 @@ type BurnEventParserV3 struct {
 	PoolEventParser
 }
 
-func (o *BurnEventParserV3) Parse(receiptLog *ethtypes.Log) (types.Event, error) {
-	input, err := o.EventInputParser.Parse(receiptLog)
+func (o *BurnEventParserV3) Parse(ethLog *ethtypes.Log) (types.Event, error) {
+	input, err := o.ethLogUnpacker.Unpack(ethLog)
 	if err != nil {
 		return nil, err
 	}
 
 	e := &event.BurnEvent{
-		EventCommon: types.EventCommonFromEthLog(receiptLog),
+		EventCommon: types.EventCommonFromEthLog(ethLog),
 		Amount0Wei:  input[1].(*big.Int),
 		Amount1Wei:  input[2].(*big.Int),
 	}
 
 	e.Pair = &types.Pair{
-		Address: receiptLog.Address,
+		Address: ethLog.Address,
 	}
 
 	e.PossibleProtocolIds = o.PossibleProtocolIds

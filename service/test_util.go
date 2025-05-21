@@ -14,6 +14,7 @@ import (
 var (
 	MockNativeTokenPrice = decimal.NewFromInt(1)
 	Wei18, _             = decimal.NewFromString("1000000000000000000")
+	Wei6, _              = decimal.NewFromString("1000000")
 )
 
 type TestContext struct {

@@ -1,7 +1,6 @@
 package event_parser
 
 import (
-	"base_scan/parser/event_parser/common"
 	"base_scan/repository/orm"
 	"base_scan/service"
 	"base_scan/types"
@@ -14,9 +13,9 @@ import (
 func TestBurn_Aerodrome(t *testing.T) {
 	// https://basescan.org/tx/0xeb50cf26b45a8ca72d9343dab433f5eeecaeb3eabc2716a7dd80ddef966948b1#eventlog#213
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog("0xeb50cf26b45a8ca72d9343dab433f5eeecaeb3eabc2716a7dd80ddef966948b1", 6)
+	ethLog := tc.GetEthLog("0xeb50cf26b45a8ca72d9343dab433f5eeecaeb3eabc2716a7dd80ddef966948b1", 6)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -27,7 +26,7 @@ func TestBurn_Aerodrome(t *testing.T) {
 	expectAmt1, _ := decimal.NewFromString("9.88229999999999995")
 	expectTx := &orm.Tx{
 		TxHash:        "0xeb50cf26b45a8ca72d9343dab433f5eeecaeb3eabc2716a7dd80ddef966948b1",
-		Event:         common.EventNameRemove,
+		Event:         types.Remove,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,
 		Token0Address: "0x1E50309675d5C41D38Ba14133B4DB5b9f44FfBCd",
@@ -55,9 +54,9 @@ func TestBurn_UniswapV2(t *testing.T) {
 	program := types.ProtocolNameUniswapV2
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -70,7 +69,7 @@ func TestBurn_UniswapV2(t *testing.T) {
 	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectTx := &orm.Tx{
 		TxHash:        txHash,
-		Event:         common.EventNameRemove,
+		Event:         types.Remove,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,
 		Token0Address: token0Address,

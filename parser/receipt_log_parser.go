@@ -13,7 +13,7 @@ var (
 )
 
 type TopicRouter interface {
-	Parse(receiptLog *ethtypes.Log) (types.Event, error)
+	Parse(ethLog *ethtypes.Log) (types.Event, error)
 }
 
 type topicRouter struct {
@@ -26,11 +26,11 @@ func NewTopicRouter() TopicRouter {
 	}
 }
 
-func (p *topicRouter) Parse(receiptLog *ethtypes.Log) (types.Event, error) {
-	eventParser, ok := p.topic2EventParser[receiptLog.Topics[0]]
+func (p *topicRouter) Parse(ethLog *ethtypes.Log) (types.Event, error) {
+	eventParser, ok := p.topic2EventParser[ethLog.Topics[0]]
 	if !ok {
 		return nil, ErrParserNotFound
 	}
 
-	return eventParser.Parse(receiptLog)
+	return eventParser.Parse(ethLog)
 }

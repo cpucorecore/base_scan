@@ -3,7 +3,7 @@ package event_parser
 import (
 	"base_scan/service"
 	"base_scan/types"
-	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 	"math/big"
@@ -22,9 +22,9 @@ func TestSync_Aerodrome(t *testing.T) {
 	program := types.ProtocolNameAerodrome
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -39,8 +39,8 @@ func TestSync_Aerodrome(t *testing.T) {
 	expectPoolUpdate := &types.PoolUpdate{
 		Program:       program,
 		LogIndex:      LogIndex,
-		Address:       ethcommon.HexToAddress(pairAddress),
-		Token0Address: ethcommon.HexToAddress(token0Address),
+		Address:       common.HexToAddress(pairAddress),
+		Token0Address: common.HexToAddress(token0Address),
 		Token1Address: types.WETHAddress,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,
@@ -60,9 +60,9 @@ func TestSync_UniswapV2(t *testing.T) {
 	program := types.ProtocolNameUniswapV2
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -77,8 +77,8 @@ func TestSync_UniswapV2(t *testing.T) {
 	expectPoolUpdate := &types.PoolUpdate{
 		Program:       program,
 		LogIndex:      LogIndex,
-		Address:       ethcommon.HexToAddress(pairAddress),
-		Token0Address: ethcommon.HexToAddress(token0Address),
+		Address:       common.HexToAddress(pairAddress),
+		Token0Address: common.HexToAddress(token0Address),
 		Token1Address: types.WETHAddress,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,
@@ -98,9 +98,9 @@ func TestSync_PancakeV2(t *testing.T) {
 	program := types.ProtocolNamePancakeV2
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -115,8 +115,8 @@ func TestSync_PancakeV2(t *testing.T) {
 	expectPoolUpdate := &types.PoolUpdate{
 		Program:       program,
 		LogIndex:      LogIndex,
-		Address:       ethcommon.HexToAddress(pairAddress),
-		Token0Address: ethcommon.HexToAddress(token0Address),
+		Address:       common.HexToAddress(pairAddress),
+		Token0Address: common.HexToAddress(token0Address),
 		Token1Address: types.WETHAddress,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,

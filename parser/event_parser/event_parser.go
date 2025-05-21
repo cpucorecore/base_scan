@@ -6,5 +6,5 @@ import (
 )
 
 type EventParser interface {
-	Parse(receiptLog *ethtypes.Log) (types.Event, error)
+	Parse(ethLog *ethtypes.Log) (types.Event, error)
 }

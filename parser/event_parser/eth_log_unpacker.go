@@ -1,4 +1,4 @@
-package event_input_parser
+package event_parser
 
 import (
 	"errors"
@@ -11,18 +11,18 @@ var (
 	ErrWrongDataUnpackLen = errors.New("wrong data unpack length")
 )
 
-type EventInputParser struct {
+type EthLogUnpacker struct {
+	AbiEvent      *abi.Event
 	TopicLen      int
 	DataUnpackLen int
-	AbiEvent      *abi.Event
 }
 
-func (p *EventInputParser) Parse(receiptLog *ethtypes.Log) ([]interface{}, error) {
-	if len(receiptLog.Topics) != p.TopicLen {
+func (p *EthLogUnpacker) Unpack(ethLog *ethtypes.Log) ([]interface{}, error) {
+	if len(ethLog.Topics) != p.TopicLen {
 		return nil, ErrWrongTopicLen
 	}
 
-	eventInput, err := p.AbiEvent.Inputs.Unpack(receiptLog.Data)
+	eventInput, err := p.AbiEvent.Inputs.Unpack(ethLog.Data)
 	if err != nil {
 		return nil, err
 	}

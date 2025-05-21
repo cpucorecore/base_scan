@@ -1,7 +1,6 @@
 package event_parser
 
 import (
-	"base_scan/parser/event_parser/common"
 	"base_scan/repository/orm"
 	"base_scan/service"
 	"base_scan/types"
@@ -25,9 +24,9 @@ func TestMint_Aerodrome(t *testing.T) {
 	program := types.ProtocolNameAerodrome
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -40,7 +39,7 @@ func TestMint_Aerodrome(t *testing.T) {
 	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectTx := &orm.Tx{
 		TxHash:        txHash,
-		Event:         common.EventNameAdd,
+		Event:         types.Add,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,
 		Token0Address: token0Address,
@@ -68,9 +67,9 @@ func TestMint_UniswapV2(t *testing.T) {
 	program := types.ProtocolNameUniswapV2
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -83,7 +82,7 @@ func TestMint_UniswapV2(t *testing.T) {
 	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectTx := &orm.Tx{
 		TxHash:        txHash,
-		Event:         common.EventNameAdd,
+		Event:         types.Add,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,
 		Token0Address: token0Address,
@@ -111,9 +110,9 @@ func TestMint_PancakeV2(t *testing.T) {
 	program := types.ProtocolNamePancakeV2
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -126,7 +125,7 @@ func TestMint_PancakeV2(t *testing.T) {
 	expectAmt1 := expectAmt1Wei.Div(service.Wei18)
 	expectTx := &orm.Tx{
 		TxHash:        txHash,
-		Event:         common.EventNameAdd,
+		Event:         types.Add,
 		Token0Amount:  expectAmt0,
 		Token1Amount:  expectAmt1,
 		Token0Address: token0Address,

@@ -6,7 +6,6 @@ import (
 	pancakev3 "base_scan/abi/pancake/v3"
 	uniswapv2 "base_scan/abi/uniswap/v2"
 	uniswapv3 "base_scan/abi/uniswap/v3"
-	"base_scan/parser/event_parser/event_input_parser"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -15,10 +14,10 @@ var (
 		FactoryEventParser: FactoryEventParser{
 			Topic:                    uniswapv2.PairCreatedTopic0,
 			PossibleFactoryAddresses: abi.Topic2FactoryAddresses[uniswapv2.PairCreatedTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			LogUnpacker: EthLogUnpacker{
+				AbiEvent:      uniswapv2.PairCreatedEvent,
 				TopicLen:      3,
 				DataUnpackLen: 2,
-				AbiEvent:      uniswapv2.PairCreatedEvent,
 			},
 		},
 	}
@@ -27,10 +26,10 @@ var (
 		FactoryEventParser: FactoryEventParser{
 			Topic:                    aerodrome.PoolCreatedTopic0,
 			PossibleFactoryAddresses: abi.Topic2FactoryAddresses[aerodrome.PoolCreatedTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			LogUnpacker: EthLogUnpacker{
+				AbiEvent:      aerodrome.PoolCreatedEvent,
 				TopicLen:      4,
 				DataUnpackLen: 2,
-				AbiEvent:      aerodrome.PoolCreatedEvent,
 			},
 		},
 	}
@@ -39,10 +38,10 @@ var (
 		PoolEventParser: PoolEventParser{
 			Topic:               uniswapv2.BurnTopic0,
 			PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv2.BurnTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			ethLogUnpacker: EthLogUnpacker{
+				AbiEvent:      uniswapv2.BurnEvent,
 				TopicLen:      3,
 				DataUnpackLen: 2,
-				AbiEvent:      uniswapv2.BurnEvent,
 			},
 		},
 	}
@@ -51,10 +50,10 @@ var (
 		PoolEventParser: PoolEventParser{
 			Topic:               aerodrome.BurnTopic0,
 			PossibleProtocolIds: abi.Topic2ProtocolIds[aerodrome.BurnTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			ethLogUnpacker: EthLogUnpacker{
+				AbiEvent:      aerodrome.BurnEvent,
 				TopicLen:      3,
 				DataUnpackLen: 2,
-				AbiEvent:      aerodrome.BurnEvent,
 			},
 		},
 	}
@@ -63,10 +62,10 @@ var (
 		PoolEventParser: PoolEventParser{
 			Topic:               uniswapv2.SwapTopic0,
 			PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv2.SwapTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			ethLogUnpacker: EthLogUnpacker{
+				AbiEvent:      uniswapv2.SwapEvent,
 				TopicLen:      3,
 				DataUnpackLen: 4,
-				AbiEvent:      uniswapv2.SwapEvent,
 			},
 		},
 	}
@@ -75,10 +74,10 @@ var (
 		PoolEventParser: PoolEventParser{
 			Topic:               aerodrome.SwapTopic0,
 			PossibleProtocolIds: abi.Topic2ProtocolIds[aerodrome.SwapTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			ethLogUnpacker: EthLogUnpacker{
+				AbiEvent:      aerodrome.SwapEvent,
 				TopicLen:      3,
 				DataUnpackLen: 4,
-				AbiEvent:      aerodrome.SwapEvent,
 			},
 		},
 	}
@@ -87,10 +86,10 @@ var (
 		PoolEventParser: PoolEventParser{
 			Topic:               uniswapv2.SyncTopic0,
 			PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv2.SyncTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			ethLogUnpacker: EthLogUnpacker{
+				AbiEvent:      uniswapv2.SyncEvent,
 				TopicLen:      1,
 				DataUnpackLen: 2,
-				AbiEvent:      uniswapv2.SyncEvent,
 			},
 		},
 	}
@@ -99,10 +98,10 @@ var (
 		PoolEventParser: PoolEventParser{
 			Topic:               aerodrome.SyncTopic0,
 			PossibleProtocolIds: abi.Topic2ProtocolIds[aerodrome.SyncTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			ethLogUnpacker: EthLogUnpacker{
+				AbiEvent:      aerodrome.SyncEvent,
 				TopicLen:      1,
 				DataUnpackLen: 2,
-				AbiEvent:      aerodrome.SyncEvent,
 			},
 		},
 	}
@@ -111,10 +110,10 @@ var (
 		PoolEventParser: PoolEventParser{
 			Topic:               uniswapv2.MintTopic0,
 			PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv2.MintTopic0],
-			EventInputParser: event_input_parser.EventInputParser{
+			ethLogUnpacker: EthLogUnpacker{
+				AbiEvent:      uniswapv2.MintEvent,
 				TopicLen:      2,
 				DataUnpackLen: 2,
-				AbiEvent:      uniswapv2.MintEvent,
 			},
 		},
 	}
@@ -130,10 +129,10 @@ var (
 			FactoryEventParser: FactoryEventParser{
 				Topic:                    uniswapv3.PoolCreatedTopic0,
 				PossibleFactoryAddresses: abi.Topic2FactoryAddresses[uniswapv3.PoolCreatedTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
+				LogUnpacker: EthLogUnpacker{
+					AbiEvent:      uniswapv3.PoolCreatedEvent,
 					TopicLen:      4,
 					DataUnpackLen: 2,
-					AbiEvent:      uniswapv3.PoolCreatedEvent,
 				},
 			},
 		},
@@ -141,10 +140,10 @@ var (
 			PoolEventParser: PoolEventParser{
 				Topic:               uniswapv3.MintTopic0,
 				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.MintTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
+				ethLogUnpacker: EthLogUnpacker{
+					AbiEvent:      uniswapv3.MintEvent,
 					TopicLen:      4,
 					DataUnpackLen: 4,
-					AbiEvent:      uniswapv3.MintEvent,
 				},
 			},
 		},
@@ -152,10 +151,10 @@ var (
 			PoolEventParser: PoolEventParser{
 				Topic:               uniswapv3.BurnTopic0,
 				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.BurnTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
+				ethLogUnpacker: EthLogUnpacker{
+					AbiEvent:      uniswapv3.BurnEvent,
 					TopicLen:      4,
 					DataUnpackLen: 3,
-					AbiEvent:      uniswapv3.BurnEvent,
 				},
 			},
 		},
@@ -163,10 +162,10 @@ var (
 			PoolEventParser: PoolEventParser{
 				Topic:               uniswapv3.SwapTopic0,
 				PossibleProtocolIds: abi.Topic2ProtocolIds[uniswapv3.SwapTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
+				ethLogUnpacker: EthLogUnpacker{
+					AbiEvent:      uniswapv3.SwapEvent,
 					TopicLen:      3,
 					DataUnpackLen: 5,
-					AbiEvent:      uniswapv3.SwapEvent,
 				},
 			},
 		},
@@ -175,10 +174,10 @@ var (
 			PoolEventParser: PoolEventParser{
 				Topic:               pancakev3.SwapTopic0,
 				PossibleProtocolIds: abi.Topic2ProtocolIds[pancakev3.SwapTopic0],
-				EventInputParser: event_input_parser.EventInputParser{
+				ethLogUnpacker: EthLogUnpacker{
+					AbiEvent:      pancakev3.SwapEvent,
 					TopicLen:      3,
 					DataUnpackLen: 7,
-					AbiEvent:      pancakev3.SwapEvent,
 				},
 			},
 		},

@@ -1,7 +1,6 @@
 package event
 
 import (
-	"base_scan/parser/event_parser/common"
 	"base_scan/types"
 	"math/big"
 )
@@ -25,7 +24,7 @@ func (e *SyncEvent) GetPoolUpdate() *types.PoolUpdate {
 		Token1Address: e.Pair.Token1Core.Address,
 	}
 
-	pu.Token0Amount, pu.Token1Amount = common.ParseAmountsByPair(e.Amount0Wei, e.Amount1Wei, e.Pair)
+	pu.Token0Amount, pu.Token1Amount = ParseAmountsByPair(e.Amount0Wei, e.Amount1Wei, e.Pair)
 
 	return pu
 }

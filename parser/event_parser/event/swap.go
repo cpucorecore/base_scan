@@ -1,7 +1,6 @@
 package event
 
 import (
-	"base_scan/parser/event_parser/common"
 	"base_scan/repository/orm"
 	"base_scan/types"
 	"github.com/shopspring/decimal"
@@ -35,23 +34,23 @@ func (e *SwapEvent) GetTx(bnbPrice decimal.Decimal) *orm.Tx {
 	}
 
 	if e.Amount0InWei.Cmp(types.ZeroBigInt) > 0 {
-		tx.Token0Amount, tx.Token1Amount = common.ParseAmountsByPair(e.Amount0InWei, e.Amount1OutWei, e.Pair)
+		tx.Token0Amount, tx.Token1Amount = ParseAmountsByPair(e.Amount0InWei, e.Amount1OutWei, e.Pair)
 		if !e.Pair.TokensReversed {
-			tx.Event = common.EventNameSell
+			tx.Event = types.Sell
 		} else {
-			tx.Event = common.EventNameBuy
+			tx.Event = types.Buy
 		}
 	} else if e.Amount1InWei.Cmp(types.ZeroBigInt) > 0 {
-		tx.Token0Amount, tx.Token1Amount = common.ParseAmountsByPair(e.Amount0OutWei, e.Amount1InWei, e.Pair)
+		tx.Token0Amount, tx.Token1Amount = ParseAmountsByPair(e.Amount0OutWei, e.Amount1InWei, e.Pair)
 		if !e.Pair.TokensReversed {
-			tx.Event = common.EventNameBuy
+			tx.Event = types.Buy
 		} else {
-			tx.Event = common.EventNameSell
+			tx.Event = types.Sell
 		}
 	} else {
 	}
 
-	tx.AmountUsd, tx.PriceUsd = common.CalcAmountAndPrice(bnbPrice, tx.Token0Amount, tx.Token1Amount, e.Pair.Token1Core.Address)
+	tx.AmountUsd, tx.PriceUsd = CalcAmountAndPrice(bnbPrice, tx.Token0Amount, tx.Token1Amount, e.Pair.Token1Core.Address)
 	return tx
 }
 

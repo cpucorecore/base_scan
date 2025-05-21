@@ -2,10 +2,9 @@ package event_parser
 
 import (
 	"base_scan/abi"
-	"base_scan/parser/event_parser/common"
 	"base_scan/parser/event_parser/event"
 	"base_scan/types"
-	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -13,17 +12,17 @@ type PoolCreatedEventParser struct {
 	FactoryEventParser
 }
 
-func (o *PoolCreatedEventParser) Parse(receiptLog *ethtypes.Log) (types.Event, error) {
+func (o *PoolCreatedEventParser) Parse(ethLog *ethtypes.Log) (types.Event, error) {
 	pair := &types.Pair{}
 
-	_, ok := o.PossibleFactoryAddresses[receiptLog.Address]
+	_, ok := o.PossibleFactoryAddresses[ethLog.Address]
 	if !ok {
 		pair.Filtered = true
 		pair.FilterCode = types.FilterCodeWrongFactory
-		return nil, common.ErrWrongFactoryAddress
+		return nil, ErrWrongFactoryAddress
 	}
 
-	input, err := o.EventInputParser.Parse(receiptLog)
+	input, err := o.LogUnpacker.Unpack(ethLog)
 	if err != nil {
 		pair.Filtered = true
 		pair.FilterCode = types.ErrCodeParseEventInput
@@ -31,18 +30,18 @@ func (o *PoolCreatedEventParser) Parse(receiptLog *ethtypes.Log) (types.Event, e
 	}
 
 	e := &event.PairCreatedEvent{
-		EventCommon: types.EventCommonFromEthLog(receiptLog),
+		EventCommon: types.EventCommonFromEthLog(ethLog),
 	}
 
-	pair.Address = input[1].(ethcommon.Address)
+	pair.Address = input[1].(common.Address)
 	pair.Token0Core = &types.TokenCore{
-		Address: ethcommon.BytesToAddress(receiptLog.Topics[1].Bytes()[12:]),
+		Address: common.BytesToAddress(ethLog.Topics[1].Bytes()[12:]),
 	}
 	pair.Token1Core = &types.TokenCore{
-		Address: ethcommon.BytesToAddress(receiptLog.Topics[2].Bytes()[12:]),
+		Address: common.BytesToAddress(ethLog.Topics[2].Bytes()[12:]),
 	}
-	pair.Block = receiptLog.BlockNumber
-	pair.ProtocolId = abi.FactoryAddress2ProtocolId[receiptLog.Address]
+	pair.Block = ethLog.BlockNumber
+	pair.ProtocolId = abi.FactoryAddress2ProtocolId[ethLog.Address]
 
 	pair.FilterByToken0AndToken1()
 

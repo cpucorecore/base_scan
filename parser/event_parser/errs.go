@@ -1,4 +1,4 @@
-package common
+package event_parser
 
 import "errors"
 

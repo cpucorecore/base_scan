@@ -1,7 +1,6 @@
 package event_parser
 
 import (
-	"base_scan/parser/event_parser/common"
 	"base_scan/repository/orm"
 	"base_scan/service"
 	"base_scan/types"
@@ -22,14 +21,14 @@ func TestSwap_Aerodrome(t *testing.T) {
 	TxIndex := uint(513)
 	expectAmt0Wei, _ := decimal.NewFromString("20238")
 	expectAmt1Wei, _ := decimal.NewFromString("199700000000000")
-	eventName := common.EventNameBuy
+	eventName := types.Buy
 	program := types.ProtocolNameAerodrome
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	t.Log(receiptLog.Topics[0].String())
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	t.Log(ethLog.Topics[0].String())
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())
@@ -67,13 +66,13 @@ func TestSwap_UniswapV2(t *testing.T) {
 	TxIndex := uint(6)
 	expectAmt0Wei, _ := decimal.NewFromString("28358176223964627199916808")
 	expectAmt1Wei, _ := decimal.NewFromString("5000000000000")
-	eventName := common.EventNameBuy
+	eventName := types.Buy
 	program := types.ProtocolNameUniswapV2
 
 	tc := service.GetTestContext()
-	receiptLog := tc.GetEthLog(txHash, logIndex)
+	ethLog := tc.GetEthLog(txHash, logIndex)
 
-	event, pErr := Topic2EventParser[receiptLog.Topics[0]].Parse(receiptLog)
+	event, pErr := Topic2EventParser[ethLog.Topics[0]].Parse(ethLog)
 	require.NoError(t, pErr)
 
 	pairWrap := tc.PairService.GetPair(event.GetPairAddress(), event.GetPossibleProtocolIds())

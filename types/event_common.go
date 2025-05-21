@@ -97,12 +97,12 @@ func (e *EventCommon) SetBlockTime(blockTime time.Time) {
 	e.BlockTime = blockTime
 }
 
-func EventCommonFromEthLog(receiptLog *ethtypes.Log) *EventCommon {
+func EventCommonFromEthLog(ethLog *ethtypes.Log) *EventCommon {
 	return &EventCommon{
-		ContractAddress: receiptLog.Address,
-		BlockNumber:     receiptLog.BlockNumber,
-		TxHash:          receiptLog.TxHash,
-		TxIndex:         receiptLog.TxIndex,
-		LogIndex:        receiptLog.Index,
+		ContractAddress: ethLog.Address,
+		BlockNumber:     ethLog.BlockNumber,
+		TxHash:          ethLog.TxHash,
+		TxIndex:         ethLog.TxIndex,
+		LogIndex:        ethLog.Index,
 	}
 }
