@@ -33,14 +33,14 @@ func (e *SwapEvent) GetTx(bnbPrice decimal.Decimal) *orm.Tx {
 		Program:       types.GetProtocolName(e.Pair.ProtocolId),
 	}
 
-	if e.Amount0InWei.Cmp(types.ZeroBigInt) > 0 {
+	if e.Amount0InWei.Sign() == 1 {
 		tx.Token0Amount, tx.Token1Amount = ParseAmountsByPair(e.Amount0InWei, e.Amount1OutWei, e.Pair)
 		if !e.Pair.TokensReversed {
 			tx.Event = types.Sell
 		} else {
 			tx.Event = types.Buy
 		}
-	} else if e.Amount1InWei.Cmp(types.ZeroBigInt) > 0 {
+	} else if e.Amount1InWei.Sign() == 1 {
 		tx.Token0Amount, tx.Token1Amount = ParseAmountsByPair(e.Amount0OutWei, e.Amount1InWei, e.Pair)
 		if !e.Pair.TokensReversed {
 			tx.Event = types.Buy

@@ -4,7 +4,7 @@ import (
 	"base_scan/repository/orm"
 )
 
-type EthBlock struct {
+type BlockInfo struct {
 	BlockNumber          uint64
 	BlockUnixTimestamp   uint64
 	BnbPrice             string
@@ -15,7 +15,7 @@ type EthBlock struct {
 	PoolUpdateParameters []*PoolUpdateParameter
 }
 
-type EthBlockOld struct {
+type BlockInfoOld struct {
 	BlockNumber            uint64
 	BlockAt                uint64
 	BnbPrice               string

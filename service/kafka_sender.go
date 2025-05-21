@@ -13,8 +13,8 @@ import (
 )
 
 type KafkaSender interface {
-	Send(block *types.EthBlock) error
-	SendOld(block *types.EthBlockOld) error
+	Send(block *types.BlockInfo) error
+	SendOld(block *types.BlockInfoOld) error
 }
 
 type kafkaSender struct {
@@ -66,7 +66,7 @@ func (c *kafkaSender) processErrors() {
 	}()
 }
 
-func (c *kafkaSender) Send(block *types.EthBlock) error {
+func (c *kafkaSender) Send(block *types.BlockInfo) error {
 	data, err := json.Marshal(block)
 	if err != nil {
 		return fmt.Errorf("json.Marshal error: %v, %v", err, block)
@@ -82,7 +82,7 @@ func (c *kafkaSender) Send(block *types.EthBlock) error {
 	return nil
 }
 
-func (c *kafkaSender) SendOld(block *types.EthBlockOld) error {
+func (c *kafkaSender) SendOld(block *types.BlockInfoOld) error {
 	data, err := json.Marshal(block)
 	if err != nil {
 		return fmt.Errorf("json.Marshal error: %v, %v", err, block)

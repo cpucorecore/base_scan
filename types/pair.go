@@ -13,12 +13,10 @@ import (
 const (
 	FilterCodeGetToken0 = iota + 1
 	FilterCodeGetToken1
-	FilterCodeGetPair // for v2
 	FilterCodeVerifyFailed
-	FilterCodeGetFee // for v3
-	FilterCodeBaseToken
+	FilterCodeNoBaseToken
 	FilterCodeWrongFactory
-	ErrCodeParseEventInput
+	FilterCodeUnpackDataErr
 )
 
 type TokenCore struct {
@@ -184,7 +182,7 @@ func (p *Pair) IsFiltered() bool {
 func (p *Pair) FilterByToken0AndToken1() bool {
 	if !IsBaseToken(p.Token0Core.Address) && !IsBaseToken(p.Token1Core.Address) {
 		p.Filtered = true
-		p.FilterCode = FilterCodeBaseToken
+		p.FilterCode = FilterCodeNoBaseToken
 	}
 
 	return p.Filtered

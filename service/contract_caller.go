@@ -50,7 +50,7 @@ func IsRetryableErr(err error) bool {
 	return true
 }
 
-func (c *ContractCaller) callContract(req *types.CallContractReq) ([]byte, error) {
+func (c *ContractCaller) callContract(req *CallContractReq) ([]byte, error) {
 	now := time.Now()
 	bytes, err := c.ethClient.CallContract(
 		c.ctx,
@@ -72,7 +72,7 @@ func (c *ContractCaller) callContract(req *types.CallContractReq) ([]byte, error
 	return bytes, nil
 }
 
-func (c *ContractCaller) CallContract(req *types.CallContractReq) ([]byte, error) {
+func (c *ContractCaller) CallContract(req *CallContractReq) ([]byte, error) {
 	ctxWithTimeout, _ := context.WithTimeout(c.ctx, c.retryParams.Timeout)
 	return retry.DoWithData(func() ([]byte, error) {
 		return c.callContract(req)
@@ -80,9 +80,9 @@ func (c *ContractCaller) CallContract(req *types.CallContractReq) ([]byte, error
 }
 
 func (c *ContractCaller) queryValues(address *common.Address, name string, outputLength int) ([]interface{}, error) {
-	req := &types.CallContractReq{
+	req := &CallContractReq{
 		Address: address,
-		Data:    types.Name2Data[name], // TODO check
+		Data:    Name2Data[name], // TODO check
 	}
 
 	bytes, err := c.CallContract(req)
@@ -168,7 +168,7 @@ CallGetPair
 for uniswap/pancake v2
 */
 func (c *ContractCaller) CallGetPair(factoryAddress, token0Address, token1Address *common.Address) (common.Address, error) {
-	req := types.BuildCallContractReqDynamic(nil, factoryAddress, v2.FactoryAbi, "getPair", token0Address, token1Address)
+	req := BuildCallContractReqDynamic(nil, factoryAddress, v2.FactoryAbi, "getPair", token0Address, token1Address)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
@@ -204,7 +204,7 @@ CallGetPool
 for uniswap/pancake v3
 */
 func (c *ContractCaller) CallGetPool(factoryAddress, token0Address, token1Address *common.Address, fee *big.Int) (common.Address, error) {
-	req := types.BuildCallContractReqDynamic(nil, factoryAddress, v3.FactoryAbi, "getPool", token0Address, token1Address, fee)
+	req := BuildCallContractReqDynamic(nil, factoryAddress, v3.FactoryAbi, "getPool", token0Address, token1Address, fee)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
@@ -232,7 +232,7 @@ CallIsPool
 for aerodrome
 */
 func (c *ContractCaller) CallIsPool(poolAddress *common.Address) (bool, error) {
-	req := types.BuildCallContractReqDynamic(nil, &aerodrome.FactoryAddress, aerodrome.FactoryAbi, "isPool", poolAddress)
+	req := BuildCallContractReqDynamic(nil, &aerodrome.FactoryAddress, aerodrome.FactoryAbi, "isPool", poolAddress)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
@@ -260,7 +260,7 @@ callGetReserves
 for uniswap/pancake v2
 */
 func (c *ContractCaller) callGetReserves(blockNumber *big.Int) ([]interface{}, error) {
-	req := types.BuildCallContractReqDynamic(blockNumber, &types.WETHUSDCPairAddressUniswapV2, v2.PairAbi, "getReserves")
+	req := BuildCallContractReqDynamic(blockNumber, &types.WETHUSDCPairAddressUniswapV2, v2.PairAbi, "getReserves")
 
 	bytes, err := c.CallContract(req)
 	if err != nil {

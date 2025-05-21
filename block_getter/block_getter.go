@@ -31,6 +31,7 @@ type BlockGetter interface {
 }
 
 type blockGetter struct {
+	ctx             context.Context
 	ethClient       *ethclient.Client
 	wsEthClient     *ethclient.Client
 	inputQueue      chan uint64
@@ -56,6 +57,7 @@ func NewBlockGetter(ethClient *ethclient.Client,
 	}
 
 	return &blockGetter{
+		ctx:             context.Background(),
 		ethClient:       ethClient,
 		wsEthClient:     wsEthClient,
 		inputQueue:      make(chan uint64, config.G.BlockGetter.QueueSize),
@@ -69,27 +71,50 @@ func NewBlockGetter(ethClient *ethclient.Client,
 }
 
 func (bg *blockGetter) getBlock(blockNumber uint64) (*types.ParseBlockContext, error) {
-	now := time.Now()
-	block, getBlockErr := bg.ethClient.BlockByNumber(context.Background(), big.NewInt(int64(blockNumber)))
+	var (
+		block          *ethtypes.Block
+		blockReceipts  []*ethtypes.Receipt
+		getBlockErr    error
+		getReceiptsErr error
+		wg             sync.WaitGroup
+	)
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		now := time.Now()
+		block, getBlockErr = bg.ethClient.BlockByNumber(bg.ctx, big.NewInt(int64(blockNumber)))
+		if getBlockErr == nil {
+			duration := time.Since(now)
+			metrics.GetBlockDurationMs.Observe(float64(duration.Milliseconds()))
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		now := time.Now()
+		blockReceipts, getReceiptsErr = bg.ethClient.BlockReceipts(bg.ctx, rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(blockNumber)))
+		if getReceiptsErr == nil {
+			duration := time.Since(now)
+			metrics.GetBlockReceiptsDurationMs.Observe(float64(duration.Milliseconds()))
+		}
+	}()
+	wg.Wait()
+
 	if getBlockErr != nil {
 		return nil, getBlockErr
 	}
-	duration := time.Since(now)
-	metrics.GetBlockDurationMs.Observe(float64(duration.Milliseconds()))
-
-	now = time.Now()
-	blockReceipts, getBlockReceiptErr := bg.ethClient.BlockReceipts(context.Background(), rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(blockNumber)))
-	if getBlockReceiptErr != nil {
-		return nil, getBlockReceiptErr
+	if getReceiptsErr != nil {
+		return nil, getReceiptsErr
 	}
-	duration = time.Since(now)
-	metrics.GetBlockReceiptsDurationMs.Observe(float64(duration.Milliseconds()))
+
 	metrics.BlockDelay.Observe(time.Now().Sub(time.Unix((int64)(block.Time()), 0)).Seconds())
+
 	return &types.ParseBlockContext{
 		Block:            block,
 		BlockReceipts:    blockReceipts,
 		HeightTime:       types.GetBlockHeightTime(block.Header()),
-		TxIndex2TxSender: make(map[uint]common.Address, 200),
+		TxIndex2TxSender: make(map[uint]common.Address, block.Transactions().Len()),
 	}, nil
 }
 
@@ -118,25 +143,26 @@ func (bg *blockGetter) Start() {
 					log.Logger.Info("block inputQueue is closed")
 					break tagFor
 				}
+
 				wg.Add(1)
 				bg.workPool.Submit(func() {
 					defer wg.Done()
+
 					log.Logger.Info("get block start", zap.Uint64("block_number", blockNumber))
 					bw, err := bg.getBlockWithRetry(blockNumber)
 					if err != nil {
 						log.Logger.Error("get block err", zap.Uint64("blockNumber", blockNumber), zap.Error(err))
 						return
 					}
+
 					log.Logger.Info("get block success", zap.Uint64("blockNumber", blockNumber))
 					bg.blockSequencer.Commit(bw, bg.outputBuffer)
 				})
 			}
 		}
 
-		taskNumber := bg.workPool.Waiting()
-		log.Logger.Debug("wait block getter task finish", zap.Int("taskNumber", taskNumber))
 		wg.Wait()
-		log.Logger.Debug("all block getter task finish")
+		log.Logger.Info("all block getter task finish")
 		close(bg.outputBuffer)
 	}()
 }
@@ -194,6 +220,7 @@ func (bg *blockGetter) startSubscribeNewHead() {
 			case err = <-subErrChan:
 				log.Logger.Error("receive block err", zap.Error(err))
 				sub.Unsubscribe()
+
 				for {
 					sub, subErrChan, subErr = bg.subscribeNewHead()
 					if subErr != nil {
@@ -201,6 +228,7 @@ func (bg *blockGetter) startSubscribeNewHead() {
 						time.Sleep(time.Second * 1)
 						continue
 					}
+
 					log.Logger.Info("subscribeNewHead() success")
 					break
 				}

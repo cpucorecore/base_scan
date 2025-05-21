@@ -23,7 +23,7 @@ func TestPair_IsFiltered(t *testing.T) {
 }
 
 func TestPair_OrderTokens(t *testing.T) {
-	TokenWBNB := &TokenCore{
+	TokenWETH := &TokenCore{
 		Address: WETHAddress,
 	}
 	TokenUSDC := &TokenCore{
@@ -42,11 +42,11 @@ func TestPair_OrderTokens(t *testing.T) {
 		{
 			name: "WETH/USDC",
 			pair: &Pair{
-				Token0Core: TokenWBNB,
+				Token0Core: TokenWETH,
 				Token1Core: TokenUSDC,
 			},
 			expected: &Pair{
-				Token0Core: TokenWBNB,
+				Token0Core: TokenWETH,
 				Token1Core: TokenUSDC,
 			},
 			TokensReversed: false,
@@ -55,10 +55,10 @@ func TestPair_OrderTokens(t *testing.T) {
 			name: "USDC/WETH",
 			pair: &Pair{
 				Token0Core: TokenUSDC,
-				Token1Core: TokenWBNB,
+				Token1Core: TokenWETH,
 			},
 			expected: &Pair{
-				Token0Core: TokenWBNB,
+				Token0Core: TokenWETH,
 				Token1Core: TokenUSDC,
 			},
 			TokensReversed: true,
@@ -66,12 +66,12 @@ func TestPair_OrderTokens(t *testing.T) {
 		{
 			name: "WETH/NonBase",
 			pair: &Pair{
-				Token0Core: TokenWBNB,
+				Token0Core: TokenWETH,
 				Token1Core: TokenNonBase,
 			},
 			expected: &Pair{
 				Token0Core: TokenNonBase,
-				Token1Core: TokenWBNB,
+				Token1Core: TokenWETH,
 			},
 			TokensReversed: true,
 		},
@@ -79,11 +79,11 @@ func TestPair_OrderTokens(t *testing.T) {
 			name: "NonBase/WETH",
 			pair: &Pair{
 				Token0Core: TokenNonBase,
-				Token1Core: TokenWBNB,
+				Token1Core: TokenWETH,
 			},
 			expected: &Pair{
 				Token0Core: TokenNonBase,
-				Token1Core: TokenWBNB,
+				Token1Core: TokenWETH,
 			},
 			TokensReversed: false,
 		},

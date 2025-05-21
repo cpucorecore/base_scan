@@ -86,7 +86,7 @@ func (e *EventCommon) IsMint() bool {
 }
 
 func (e *EventCommon) GetMintAmount() (decimal.Decimal, decimal.Decimal) {
-	return ZeroDecimal, ZeroDecimal
+	return decimal.Zero, decimal.Zero
 }
 
 func (e *EventCommon) SetMaker(maker common.Address) {

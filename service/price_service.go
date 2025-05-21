@@ -4,7 +4,6 @@ import (
 	"base_scan/cache"
 	"base_scan/log"
 	"base_scan/metrics"
-	"base_scan/types"
 	"context"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/panjf2000/ants/v2"
@@ -89,7 +88,7 @@ func (ps *priceService) getNativeTokenPrice(blockNumber *big.Int) (decimal.Decim
 	reserve0, reserve1, err := ps.contractCaller.GetReservesByBlockNumber(blockNumber)
 	if err != nil {
 		log.Logger.Error("GetReservesByBlockNumber err", zap.Error(err), zap.Uint64("blockNumber", blockNumber.Uint64()))
-		return types.ZeroDecimal, err
+		return decimal.Zero, err
 	}
 	metrics.CallContractForNativeTokenPriceDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 

@@ -135,20 +135,20 @@ func (p *blockParser) parseBlock(pbc *types.ParseBlockContext) {
 	pbc.NativeTokenPrice = p.waitForNativeTokenPrice(pbc.HeightTime.HeightBigInt)
 
 	now := time.Now()
-	br := types.NewBlockResult(pbc.HeightTime.HeightBigInt.Uint64(), pbc.HeightTime.Timestamp, pbc.NativeTokenPrice)
-	for _, receipt := range pbc.BlockReceipts {
-		if receipt.Status != 1 {
+	br := types.NewBlockResult(pbc.HeightTime.Height, pbc.HeightTime.Timestamp, pbc.NativeTokenPrice)
+	for _, txReceipt := range pbc.BlockReceipts {
+		if txReceipt.Status != 1 {
 			continue
 		}
 
-		txSender, err := pbc.GetTxSender(receipt.TransactionIndex)
+		txSender, err := pbc.GetTxSender(txReceipt.TransactionIndex)
 		if err != nil {
-			log.Logger.Info("Waring: get tx sender err", zap.Error(err))
+			log.Logger.Info("Err: get tx sender err", zap.Error(err))
 			continue
 		}
 
 		tr := types.NewTxResult(txSender)
-		for _, ethLog := range receipt.Logs {
+		for _, ethLog := range txReceipt.Logs {
 			if len(ethLog.Topics) == 0 {
 				continue
 			}

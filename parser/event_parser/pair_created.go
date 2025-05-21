@@ -25,7 +25,7 @@ func (o *PairCreatedEventParser) Parse(ethLog *ethtypes.Log) (types.Event, error
 	input, err := o.LogUnpacker.Unpack(ethLog)
 	if err != nil {
 		pair.Filtered = true
-		pair.FilterCode = types.ErrCodeParseEventInput
+		pair.FilterCode = types.FilterCodeUnpackDataErr
 		return nil, err
 	}
 

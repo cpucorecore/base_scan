@@ -18,18 +18,18 @@ import (
 func TestContractCaller_CallContract(t *testing.T) {
 	cc := GetTestContext().ContractCaller
 	address := common.HexToAddress("0x4200000000000000000000000000000000000006")
-	req := &types.CallContractReq{
+	req := &CallContractReq{
 		Address: &address,
 	}
 
 	// call erc20 contract with a method not exist, should return non err and empty bytes
-	req.Data = types.Name2Data["getReserves"]
+	req.Data = Name2Data["getReserves"]
 	bytes, err := cc.CallContract(req)
 	require.Nil(t, err)
 	require.Equal(t, 0, len(bytes))
 
 	// call erc20 contract with a method exist, should return non err and non-empty bytes
-	req.Data = types.Name2Data["name"]
+	req.Data = Name2Data["name"]
 	bytes, err = cc.CallContract(req)
 	require.Nil(t, err)
 	require.True(t, len(bytes) > 0)

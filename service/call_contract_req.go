@@ -1,4 +1,4 @@
-package types
+package service
 
 import (
 	"base_scan/abi/bep20"

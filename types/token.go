@@ -100,9 +100,6 @@ func (t *Token) Equal(token *Token) bool {
 	if t.Decimals != token.Decimals {
 		return false
 	}
-	//if t.TotalSupply.Cmp(token.TotalSupply) != 0 {
-	//	return false
-	//}
 	if t.BlockNumber != token.BlockNumber {
 		return false
 	}

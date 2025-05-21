@@ -8,24 +8,24 @@ import (
 )
 
 type BlockResult struct {
-	Height    uint64
-	Timestamp uint64
-	BlockTime time.Time
-	BnbPrice  decimal.Decimal
-	NewPairs  map[common.Address]*Pair
-	NewTokens map[common.Address]*Token
-	TxResults []*TxResult
+	Height           uint64
+	Timestamp        uint64
+	BlockTime        time.Time
+	NativeTokenPrice decimal.Decimal
+	NewPairs         map[common.Address]*Pair
+	NewTokens        map[common.Address]*Token
+	TxResults        []*TxResult
 }
 
-func NewBlockResult(height, Timestamp uint64, bnbPrice decimal.Decimal) *BlockResult {
+func NewBlockResult(height, Timestamp uint64, nativeTokenPrice decimal.Decimal) *BlockResult {
 	return &BlockResult{
-		Height:    height,
-		Timestamp: Timestamp,
-		BlockTime: time.Unix(int64(Timestamp), 0),
-		BnbPrice:  bnbPrice,
-		NewPairs:  make(map[common.Address]*Pair),
-		NewTokens: make(map[common.Address]*Token),
-		TxResults: make([]*TxResult, 0, 200),
+		Height:           height,
+		Timestamp:        Timestamp,
+		BlockTime:        time.Unix(int64(Timestamp), 0),
+		NativeTokenPrice: nativeTokenPrice,
+		NewPairs:         make(map[common.Address]*Pair),
+		NewTokens:        make(map[common.Address]*Token),
+		TxResults:        make([]*TxResult, 0, 200),
 	}
 }
 
@@ -86,7 +86,7 @@ func mergePoolUpdateParameters(poolUpdateParameters []*PoolUpdateParameter) []*P
 	return poolUpdateParametersMerged
 }
 
-func (br *BlockResult) GetKafkaMessage() *EthBlock {
+func (br *BlockResult) GetKafkaMessage() *BlockInfo {
 	events := br.getAllEvents()
 
 	txs := make([]*orm.Tx, 0, len(events))
@@ -100,7 +100,7 @@ func (br *BlockResult) GetKafkaMessage() *EthBlock {
 		}
 
 		if event.CanGetTx() {
-			txs = append(txs, event.GetTx(br.BnbPrice))
+			txs = append(txs, event.GetTx(br.NativeTokenPrice))
 		}
 
 		if event.CanGetPoolUpdate() {
@@ -130,10 +130,10 @@ func (br *BlockResult) GetKafkaMessage() *EthBlock {
 	poolUpdatesMerged := mergePoolUpdates(poolUpdates)
 	poolUpdateParametersMerged := mergePoolUpdateParameters(poolUpdateParameters)
 
-	ethBlock := &EthBlock{
+	ethBlock := &BlockInfo{
 		BlockNumber:          br.Height,
 		BlockUnixTimestamp:   br.Timestamp,
-		BnbPrice:             br.BnbPrice.String(),
+		BnbPrice:             br.NativeTokenPrice.String(),
 		Txs:                  txs,
 		NewTokens:            ormTokens,
 		NewPairs:             ormPairs,
@@ -144,7 +144,7 @@ func (br *BlockResult) GetKafkaMessage() *EthBlock {
 	return ethBlock
 }
 
-func (br *BlockResult) GetOldKafkaMessageAndNewTokensPairs() (*EthBlockOld, []*orm.Token, []*orm.Pair) {
+func (br *BlockResult) GetOldKafkaMessageAndNewTokensPairs() (*BlockInfoOld, []*orm.Token, []*orm.Pair) {
 	events := br.getAllEvents()
 
 	txs := make([]*orm.Tx, 0, len(events))
@@ -158,7 +158,7 @@ func (br *BlockResult) GetOldKafkaMessageAndNewTokensPairs() (*EthBlockOld, []*o
 		}
 
 		if event.CanGetTx() {
-			txs = append(txs, event.GetTx(br.BnbPrice))
+			txs = append(txs, event.GetTx(br.NativeTokenPrice))
 		}
 
 		if event.CanGetPoolUpdate() {
@@ -188,10 +188,10 @@ func (br *BlockResult) GetOldKafkaMessageAndNewTokensPairs() (*EthBlockOld, []*o
 	poolUpdatesV2Merged := mergePoolUpdates(poolUpdatesV2)
 	poolUpdateParametersMerged := mergePoolUpdateParameters(poolUpdateParameters)
 
-	ethBlock := &EthBlockOld{
+	ethBlock := &BlockInfoOld{
 		BlockNumber:            br.Height,
 		BlockAt:                br.Timestamp,
-		BnbPrice:               br.BnbPrice.String(),
+		BnbPrice:               br.NativeTokenPrice.String(),
 		Txs:                    txs,
 		PoolUpdatesV2:          poolUpdatesV2Merged,
 		PoolUpdateParametersV3: poolUpdateParametersMerged,

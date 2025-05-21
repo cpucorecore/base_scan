@@ -1,20 +1,25 @@
 package types
 
 import (
-	chainparams "base_scan/chain/v1_15_11/params"
+	chainparams "base_scan/chain"
+	"base_scan/log"
+	"errors"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 	"math/big"
 	"time"
 )
 
+var (
+	errx = errors.New("xx")
+)
+
 type BlockHeightTime struct {
-	HeightBigInt *big.Int
 	Height       uint64
 	Timestamp    uint64
+	HeightBigInt *big.Int
 	Time         time.Time
 }
 
@@ -47,20 +52,23 @@ func (c *ParseBlockContext) GetTxSender(txIndex uint) (common.Address, error) {
 		return txSender, nil
 	}
 
-	blockTxs := c.Block.Transactions()
-	if txIndex >= uint(len(blockTxs)) {
-		log.Warn("receipt txIndex is bigger than block txs length",
-			zap.Uint64("blockNumber", c.HeightTime.HeightBigInt.Uint64()),
-			zap.Any("blockTxs length", len(blockTxs)),
-			zap.Uint("txIndex", txIndex))
-		return ZeroAddress, nil
+	transactions := c.Block.Transactions()
+	transactionsLen := uint(transactions.Len())
+	if txIndex >= transactionsLen {
+		log.Logger.Info("Waring: txIndex out of range",
+			zap.Uint64("height", c.HeightTime.Height),
+			zap.Any("transactions length", transactionsLen),
+			zap.Uint("txIndex", txIndex),
+		)
+		return ZeroAddress, errx
 	}
 
 	signer := ethtypes.MakeSigner(chainparams.ChainConfig, c.HeightTime.HeightBigInt, c.HeightTime.Timestamp)
-	sender, err := ethtypes.Sender(signer, blockTxs[txIndex])
+	sender, err := ethtypes.Sender(signer, transactions[txIndex])
 	if err != nil {
 		return ZeroAddress, err
 	}
+
 	c.TxIndex2TxSender[txIndex] = sender
 	return sender, nil
 }
