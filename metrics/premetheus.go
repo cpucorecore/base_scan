@@ -10,10 +10,9 @@ import (
 
 var (
 	defaultMaxAge     = time.Second * 10
-	defaultAgeBuckets = uint32(60)
+	defaultAgeBuckets = uint32(100)
 	defaultObjectives = map[float64]float64{
-		0.9:  0.01,
-		0.99: 0.001,
+		0.99: 0.01,
 	}
 )
 
@@ -38,9 +37,9 @@ var (
 		Objectives: defaultObjectives,
 	})
 
-	DbOperationDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "db_operation_duration_ms",
-		Help:       "db operation duration in Milliseconds",
+	BlockDelay = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "block_delay",
+		Help:       "block delay in Seconds",
 		MaxAge:     defaultMaxAge,
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
@@ -49,6 +48,14 @@ var (
 	ParseBlockDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "parse_block_duration_ms",
 		Help:       "parse block duration in Milliseconds",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
+	})
+
+	DbOperationDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "db_operation_duration_ms",
+		Help:       "db operation duration in Milliseconds",
 		MaxAge:     defaultMaxAge,
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
@@ -70,16 +77,8 @@ var (
 		Objectives: defaultObjectives,
 	})
 
-	BlockDelay = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "block_delay",
-		Help:       "block delay in Seconds",
-		MaxAge:     defaultMaxAge,
-		AgeBuckets: defaultAgeBuckets,
-		Objectives: defaultObjectives,
-	})
-
-	CallContractForNativeTokenPriceDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "call_contract_price_duration_ms",
+	CallContractArchiveDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "call_contract_archive_duration_ms",
 		MaxAge:     defaultMaxAge,
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
@@ -105,6 +104,13 @@ var (
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
 	})
+
+	CallContractErrors = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "call_contract_errors_total",
+		},
+		[]string{"is_retryable"},
+	)
 )
 
 func init() {
@@ -114,17 +120,19 @@ func init() {
 
 	prometheus.MustRegister(GetBlockDurationMs)
 	prometheus.MustRegister(GetBlockReceiptsDurationMs)
+	prometheus.MustRegister(BlockDelay)
 
-	prometheus.MustRegister(DbOperationDurationMs)
 	prometheus.MustRegister(ParseBlockDurationMs)
+	prometheus.MustRegister(DbOperationDurationMs)
 	prometheus.MustRegister(SendBlockKafkaDurationMs)
 
 	prometheus.MustRegister(CallContractDurationMs)
-	prometheus.MustRegister(BlockDelay)
-	prometheus.MustRegister(CallContractForNativeTokenPriceDurationMs)
+	prometheus.MustRegister(CallContractArchiveDurationMs)
 	prometheus.MustRegister(GetPairDurationMs)
 	prometheus.MustRegister(VerifyPairDurationMs)
 	prometheus.MustRegister(GetTokenDurationMs)
+
+	prometheus.MustRegister(CallContractErrors)
 }
 
 func init() {

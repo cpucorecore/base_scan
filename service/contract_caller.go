@@ -5,6 +5,7 @@ import (
 	v2 "base_scan/abi/uniswap/v2"
 	v3 "base_scan/abi/uniswap/v3"
 	"base_scan/config"
+	"base_scan/log"
 	"base_scan/metrics"
 	"base_scan/types"
 	"context"
@@ -13,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"go.uber.org/zap"
 	"math/big"
 	"strings"
 	"time"
@@ -60,14 +62,20 @@ func (c *ContractCaller) callContract(req *CallContractReq) ([]byte, error) {
 		},
 		req.BlockNumber,
 	)
-	metrics.CallContractDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 
 	if err != nil {
 		if IsRetryableErr(err) {
+			metrics.CallContractErrors.WithLabelValues("true").Inc()
+			log.Logger.Info("Err: call contract encounter retryable err", zap.Error(err), zap.Any("req", req))
 			return nil, err
 		}
+
+		metrics.CallContractErrors.WithLabelValues("false").Inc()
+		log.Logger.Info("Err: call contract encounter no retryable err", zap.Error(err), zap.Any("req", req))
 		return nil, nil
 	}
+
+	metrics.CallContractDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 
 	return bytes, nil
 }

@@ -37,7 +37,7 @@ func (tp *TestPair) GetPairWithoutTokenInfo() *types.Pair {
 	return pair
 }
 
-func (tp *TestPair) GetPair() *types.Pair {
+func (tp *TestPair) GetExpectedPair() *types.Pair {
 	pair := &types.Pair{
 		Address:        tp.address,
 		TokensReversed: tp.tokenReversed,

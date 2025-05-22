@@ -90,7 +90,7 @@ func (ps *priceService) getNativeTokenPrice(blockNumber *big.Int) (decimal.Decim
 		log.Logger.Error("GetReservesByBlockNumber err", zap.Error(err), zap.Uint64("blockNumber", blockNumber.Uint64()))
 		return decimal.Zero, err
 	}
-	metrics.CallContractForNativeTokenPriceDurationMs.Observe(float64(time.Since(now).Milliseconds()))
+	metrics.CallContractArchiveDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 
 	// TODO get pair info
 	USDCAmountDivWETHAmount := decimal.NewFromBigInt(reserve1, -6).Div(decimal.NewFromBigInt(reserve0, -18))

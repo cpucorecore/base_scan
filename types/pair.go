@@ -84,6 +84,11 @@ type Pair struct {
 	Timestamp        time.Time
 }
 
+func (p *Pair) String() string {
+	bytes, _ := json.Marshal(p)
+	return string(bytes)
+}
+
 func (p *Pair) MarshalBinary() ([]byte, error) {
 	type Alias Pair
 	return json.Marshal(&struct {
@@ -208,8 +213,8 @@ func (p *Pair) GetOrmPair() *orm.Pair {
 		Address:  p.Address.String(),
 		Token0:   p.Token0Core.Address.String(),
 		Token1:   p.Token1Core.Address.String(),
-		Reserve0: decimal.NewFromBigInt(p.Token0InitAmount.BigInt(), int32(p.Token0Core.Decimals)), // for db type is numeric(78)
-		Reserve1: decimal.NewFromBigInt(p.Token1InitAmount.BigInt(), int32(p.Token1Core.Decimals)), // for db type is numeric(78)
+		Reserve0: p.Token0InitAmount.Mul(decimal.New(1, int32(p.Token0Core.Decimals))), // for db type is numeric(78)
+		Reserve1: p.Token1InitAmount.Mul(decimal.New(1, int32(p.Token1Core.Decimals))), // for db type is numeric(78)
 		ChainId:  chain.Id,
 		Block:    p.Block,
 		BlockAt:  p.BlockAt,
