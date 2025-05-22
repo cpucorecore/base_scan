@@ -28,12 +28,12 @@ func NewBlockSequencer() BlockSequencer {
 	return s
 }
 
-func (s *blockSequencer) Init(height uint64) {
-	log.Logger.Info("init block sequencer", zap.Uint64("height", height))
+func (s *blockSequencer) Init(startHeight uint64) {
+	log.Logger.Info("init block sequencer", zap.Uint64("startHeight", startHeight))
 	if s.height == 0 {
-		s.height = height
+		s.height = startHeight - 1
 	} else {
-		log.Logger.Fatal("sequencer init err", zap.Uint64("height", height), zap.Uint64("old height", s.height))
+		log.Logger.Fatal("sequencer init err", zap.Uint64("startHeight", startHeight), zap.Uint64("old height", s.height))
 	}
 }
 

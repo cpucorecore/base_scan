@@ -112,8 +112,8 @@ func main() {
 		log.Logger.Fatal("start block number is zero")
 	}
 
-	blockSequencerForBlockGetter.Init(startBlockNumber - 1)
-	blockSequencerForBlockHandler.Init(startBlockNumber - 1)
+	blockSequencerForBlockGetter.Init(startBlockNumber)
+	blockSequencerForBlockHandler.Init(startBlockNumber)
 
 	priceService.Start(startBlockNumber)
 	blockGetter.Start()

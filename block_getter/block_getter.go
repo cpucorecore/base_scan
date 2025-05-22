@@ -168,20 +168,21 @@ func (bg *blockGetter) Start() {
 }
 
 func (bg *blockGetter) GetStartBlockNumber(startBlockNumber uint64) uint64 {
-	newestBlockNumber, err := bg.ethClient.BlockNumber(context.Background())
+	if startBlockNumber != 0 {
+		return startBlockNumber
+	}
+
+	finishedBlock := bg.cache.GetFinishedBlock()
+	if finishedBlock != 0 {
+		return finishedBlock + 1
+	}
+
+	newestBlockNumber, err := bg.ethClient.BlockNumber(bg.ctx)
 	if err != nil {
-		log.Logger.Fatal("ethClient.HeightBigInt() err", zap.Error(err))
+		log.Logger.Fatal("ethClient.BlockNumber() err", zap.Error(err))
 	}
 
-	if startBlockNumber == 0 {
-		startBlockNumber = bg.cache.GetFinishedBlock()
-	}
-
-	if startBlockNumber == 0 {
-		startBlockNumber = newestBlockNumber
-	}
-
-	return startBlockNumber
+	return newestBlockNumber
 }
 
 func (bg *blockGetter) setHeaderHeight(headerHeight uint64) {

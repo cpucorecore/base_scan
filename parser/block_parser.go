@@ -236,6 +236,7 @@ func (p *blockParser) commitBlockResultOld(blockResult *types.BlockResult) {
 
 	p.cache.SetFinishedBlock(blockResult.Height)
 	metrics.CurrentHeight.Set(float64(blockResult.Height))
+	metrics.TxCntByBlock.Set(float64(len(msg.Txs)))
 }
 
 func (p *blockParser) startHandleBlockResult(wg *sync.WaitGroup) {
