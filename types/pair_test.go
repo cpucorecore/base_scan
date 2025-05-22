@@ -19,7 +19,7 @@ func TestPair_IsFiltered(t *testing.T) {
 	filtered := pair.FilterByToken0AndToken1()
 	assert.Equal(t, filtered, true)
 	assert.Equal(t, pair.Filtered, true)
-	assert.Equal(t, pair.FilterCode, 6)
+	assert.Equal(t, pair.FilterCode, FilterCodeNoBaseToken)
 }
 
 func TestPair_OrderTokens(t *testing.T) {

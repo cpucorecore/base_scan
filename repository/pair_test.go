@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"base_scan/chain"
 	"base_scan/repository/orm"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestPairRepository_Create(t *testing.T) {
 		Address:  "0x01",
 		Token0:   "0x0a",
 		Token1:   "0x0b",
-		ChainId:  56,
+		ChainId:  chain.Id,
 		Reserve0: decimal.NewFromInt(1),
 		Reserve1: decimal.NewFromInt(2),
 	}
@@ -52,7 +53,7 @@ func TestPairRepository_CreateDup(t *testing.T) {
 			Address:  "0xa1",
 			Token0:   "0xa1",
 			Token1:   "0xa1",
-			ChainId:  56,
+			ChainId:  chain.Id,
 			Reserve0: decimal.NewFromInt(1),
 			Reserve1: decimal.NewFromInt(2),
 		},
@@ -61,7 +62,7 @@ func TestPairRepository_CreateDup(t *testing.T) {
 			Address:  "0xa2",
 			Token0:   "0xa2",
 			Token1:   "0xa2",
-			ChainId:  56,
+			ChainId:  chain.Id,
 			Reserve0: decimal.NewFromInt(1),
 			Reserve1: decimal.NewFromInt(2),
 		},
@@ -70,7 +71,7 @@ func TestPairRepository_CreateDup(t *testing.T) {
 			Address:  "0xa3",
 			Token0:   "0xa3",
 			Token1:   "0xa3",
-			ChainId:  56,
+			ChainId:  chain.Id,
 			Reserve0: decimal.NewFromInt(1),
 			Reserve1: decimal.NewFromInt(2),
 		},

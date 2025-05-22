@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"base_scan/chain"
 	"base_scan/repository/orm"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
@@ -19,7 +20,7 @@ func prepareTokenTest() *TokenRepository {
 
 func cleanupTokenTest(tokenRepository *TokenRepository, addresses ...string) {
 	for _, address := range addresses {
-		tokenRepository.DeleteByAddressAndChainId56(address)
+		tokenRepository.DeleteByAddressAndChainId(address)
 	}
 }
 
@@ -32,11 +33,11 @@ func TestTokenRepository_Create(t *testing.T) {
 		Symbol:      "DUEL",
 		Decimal:     18,
 		TotalSupply: "2659527283.779538",
-		ChainId:     56,
+		ChainId:     chain.Id,
 	}
 
 	tokenRepository.Create(token)
-	tokenQueried, getErr := tokenRepository.GetByAddressAndChainId56(address)
+	tokenQueried, getErr := tokenRepository.GetByAddressAndChainId(address)
 	require.Nil(t, getErr)
 	require.True(t, token.Equal(tokenQueried))
 	cleanupTokenTest(tokenRepository, address)
@@ -51,7 +52,7 @@ func TestTokenRepository_CreateBatch_NoConflict(t *testing.T) {
 			Symbol:      "s1",
 			Decimal:     18,
 			TotalSupply: "1",
-			ChainId:     56,
+			ChainId:     chain.Id,
 		},
 		{
 			Address:     "0x02",
@@ -59,7 +60,7 @@ func TestTokenRepository_CreateBatch_NoConflict(t *testing.T) {
 			Symbol:      "s2",
 			Decimal:     18,
 			TotalSupply: "2",
-			ChainId:     56,
+			ChainId:     chain.Id,
 		},
 		{
 			Address:     "0x03",
@@ -67,13 +68,13 @@ func TestTokenRepository_CreateBatch_NoConflict(t *testing.T) {
 			Symbol:      "s3",
 			Decimal:     18,
 			TotalSupply: "3",
-			ChainId:     56,
+			ChainId:     chain.Id,
 		},
 	}
 
 	tokenRepository.CreateBatch(tokens, "address", "chain_id")
 	for i, token := range tokens {
-		tokenQueried, err := tokenRepository.GetByAddressAndChainId56(token.Address)
+		tokenQueried, err := tokenRepository.GetByAddressAndChainId(token.Address)
 		require.Nil(t, err)
 		require.True(t, tokenQueried.Equal(tokens[i]))
 	}
@@ -90,7 +91,7 @@ func TestTokenRepository_CreateBatch_ConflictWithDb(t *testing.T) {
 			Symbol:      "s1",
 			Decimal:     18,
 			TotalSupply: "1",
-			ChainId:     56,
+			ChainId:     chain.Id,
 		},
 		{
 			Address:     "0x02",
@@ -98,7 +99,7 @@ func TestTokenRepository_CreateBatch_ConflictWithDb(t *testing.T) {
 			Symbol:      "s2",
 			Decimal:     18,
 			TotalSupply: "2",
-			ChainId:     56,
+			ChainId:     chain.Id,
 		},
 		{
 			Address:     "0x03",
@@ -106,7 +107,7 @@ func TestTokenRepository_CreateBatch_ConflictWithDb(t *testing.T) {
 			Symbol:      "s3",
 			Decimal:     18,
 			TotalSupply: "3",
-			ChainId:     56,
+			ChainId:     chain.Id,
 		},
 	}
 
@@ -114,7 +115,7 @@ func TestTokenRepository_CreateBatch_ConflictWithDb(t *testing.T) {
 	tokenRepository.CreateBatch(tokens, "address", "chain_id")
 
 	for i, token := range tokens {
-		tokenQueried, err := tokenRepository.GetByAddressAndChainId56(token.Address)
+		tokenQueried, err := tokenRepository.GetByAddressAndChainId(token.Address)
 		require.Nil(t, err)
 		require.True(t, tokenQueried.Equal(tokens[i]))
 	}
@@ -130,13 +131,13 @@ func TestTokenRepository_UpdateMainPair(t *testing.T) {
 		Symbol:      "s1",
 		Decimal:     18,
 		TotalSupply: "1",
-		ChainId:     56,
+		ChainId:     chain.Id,
 	}
 
 	tokenRepository.Create(token)
 	tokenRepository.UpdateMainPair(token.Address, "0x06")
 
-	tokenQueried, err := tokenRepository.GetByAddressAndChainId56(token.Address)
+	tokenQueried, err := tokenRepository.GetByAddressAndChainId(token.Address)
 	require.Nil(t, err)
 	require.True(t, token.Equal(tokenQueried))
 	require.Equal(t, "0x06", tokenQueried.MainPair)

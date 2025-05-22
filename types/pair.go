@@ -208,8 +208,8 @@ func (p *Pair) GetOrmPair() *orm.Pair {
 		Address:  p.Address.String(),
 		Token0:   p.Token0Core.Address.String(),
 		Token1:   p.Token1Core.Address.String(),
-		Reserve0: p.Token0InitAmount,
-		Reserve1: p.Token1InitAmount,
+		Reserve0: decimal.NewFromBigInt(p.Token0InitAmount.BigInt(), int32(p.Token0Core.Decimals)), // for db type is numeric(78)
+		Reserve1: decimal.NewFromBigInt(p.Token1InitAmount.BigInt(), int32(p.Token1Core.Decimals)), // for db type is numeric(78)
 		ChainId:  chain.Id,
 		Block:    p.Block,
 		BlockAt:  p.BlockAt,

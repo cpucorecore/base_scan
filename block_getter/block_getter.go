@@ -195,14 +195,91 @@ func (bg *blockGetter) getHeaderHeight() uint64 {
 }
 
 func (bg *blockGetter) subscribeNewHead() (ethereum.Subscription, <-chan error, error) {
-	sub, err := bg.wsEthClient.SubscribeNewHead(context.Background(), bg.blockHeaderChan)
+	sub, err := bg.wsEthClient.SubscribeNewHead(bg.ctx, bg.blockHeaderChan)
 	if err != nil {
 		return nil, nil, err
 	}
 	return sub, sub.Err(), nil
 }
 
+func (bg *blockGetter) reconnectWithBackoff() (ethereum.Subscription, <-chan error) {
+	retryDelay := time.Second * 1
+	maxRetryDelay := time.Second * 10
+
+	for {
+		sub, errChan, err := bg.subscribeNewHead()
+		if err == nil {
+			log.Logger.Info("WebSocket reconnected successfully")
+			return sub, errChan
+		}
+
+		log.Logger.Error("WebSocket reconnect failed",
+			zap.Error(err),
+			zap.Duration("nextRetry", retryDelay),
+		)
+		time.Sleep(retryDelay)
+
+		retryDelay *= 2
+		if retryDelay > maxRetryDelay {
+			retryDelay = maxRetryDelay
+		}
+	}
+}
+
 func (bg *blockGetter) startSubscribeNewHead() {
+	headerHeight, err := bg.ethClient.BlockNumber(bg.ctx)
+	if err != nil {
+		log.Logger.Fatal("HeightBigInt() err", zap.Error(err))
+	}
+	bg.setHeaderHeight(headerHeight)
+
+	sub, errChan, err := bg.subscribeNewHead()
+	if err != nil {
+		log.Logger.Fatal("subscribeNewHead() err", zap.Error(err))
+	}
+
+	go func() {
+		noBlockTimeout := time.NewTimer(10 * time.Second)
+		defer noBlockTimeout.Stop()
+
+		resetConnection := func() {
+			noBlockTimeout.Stop()
+			select {
+			case <-noBlockTimeout.C:
+			default:
+			}
+			sub.Unsubscribe()
+
+			sub, errChan = bg.reconnectWithBackoff()
+			noBlockTimeout.Reset(10 * time.Second)
+		}
+
+		for {
+			select {
+			case err = <-errChan:
+				log.Logger.Error("WebSocket error", zap.Error(err))
+				resetConnection()
+			case blockHeader := <-bg.blockHeaderChan:
+				height := blockHeader.Number.Uint64()
+				log.Logger.Info("New block", zap.Uint64("height", height))
+				bg.setHeaderHeight(height)
+				metrics.NewestHeight.Set(float64(height))
+
+				noBlockTimeout.Stop()
+				select {
+				case <-noBlockTimeout.C:
+				default:
+				}
+				noBlockTimeout.Reset(10 * time.Second)
+			case <-noBlockTimeout.C:
+				log.Logger.Warn("No new blocks for 10s, reconnect WebSocket")
+				resetConnection()
+			}
+		}
+	}()
+}
+
+func (bg *blockGetter) startSubscribeNewHead2() {
 	headerHeight, err := bg.ethClient.BlockNumber(context.Background())
 	if err != nil {
 		log.Logger.Fatal("HeightBigInt() err", zap.Error(err))
