@@ -43,7 +43,7 @@ type ParseBlockContext struct {
 	BlockResult *BlockResult
 }
 
-func (c *ParseBlockContext) GetBlockNumber() uint64 {
+func (c *ParseBlockContext) GetSequence() uint64 {
 	return c.HeightTime.Height
 }
 

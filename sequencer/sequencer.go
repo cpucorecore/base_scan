@@ -8,16 +8,20 @@ import (
 	"sync"
 )
 
+type Sequenceable interface {
+	GetSequence() uint64
+}
+
 type BlockSequencer interface {
 	Init(height uint64)
 	Commit(bc *types.ParseBlockContext, output chan *types.ParseBlockContext)
 }
 
 type blockSequencer struct {
-	active bool
-	mu     sync.Mutex
-	cond   *sync.Cond
-	height uint64
+	active   bool
+	mu       sync.Mutex
+	cond     *sync.Cond
+	sequence uint64
 }
 
 func NewBlockSequencer() BlockSequencer {
@@ -28,12 +32,12 @@ func NewBlockSequencer() BlockSequencer {
 	return s
 }
 
-func (s *blockSequencer) Init(startHeight uint64) {
-	log.Logger.Info("init block sequencer", zap.Uint64("startHeight", startHeight))
-	if s.height == 0 {
-		s.height = startHeight - 1
+func (s *blockSequencer) Init(sequence uint64) {
+	log.Logger.Info("init block sequencer", zap.Uint64("sequence", sequence))
+	if s.sequence == 0 {
+		s.sequence = sequence - 1
 	} else {
-		log.Logger.Fatal("sequencer init err", zap.Uint64("startHeight", startHeight), zap.Uint64("old height", s.height))
+		log.Logger.Fatal("sequencer init err", zap.Uint64("sequence", sequence), zap.Uint64("old sequence", s.sequence))
 	}
 }
 
@@ -43,13 +47,16 @@ func (s *blockSequencer) Commit(blockContext *types.ParseBlockContext, outputCha
 		return
 	}
 
+	sequence := blockContext.GetSequence()
+
 	s.mu.Lock()
-	for s.height+1 != blockContext.GetBlockNumber() {
+	for s.sequence+1 != sequence {
 		s.cond.Wait()
 	}
 
 	outputChan <- blockContext
-	s.height = blockContext.GetBlockNumber()
+	s.sequence = sequence
+
 	s.cond.Broadcast()
 	s.mu.Unlock()
 }
