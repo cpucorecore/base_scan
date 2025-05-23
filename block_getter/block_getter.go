@@ -156,6 +156,7 @@ func (bg *blockGetter) Start() {
 					}
 
 					log.Logger.Info("get block success", zap.Uint64("blockNumber", blockNumber))
+					metrics.BlockQueueSize.Set(float64(len(bg.outputBuffer)))
 					bg.blockSequencer.Commit(bw, bg.outputBuffer)
 				})
 			}

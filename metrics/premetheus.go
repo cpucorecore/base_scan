@@ -45,6 +45,8 @@ var (
 		Objectives: defaultObjectives,
 	})
 
+	BlockQueueSize = prometheus.NewGauge(prometheus.GaugeOpts{Name: "block_queue_size"})
+
 	ParseBlockDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "parse_block_duration_ms",
 		Help:       "parse block duration in Milliseconds",
@@ -135,6 +137,7 @@ func init() {
 	prometheus.MustRegister(GetBlockDurationMs)
 	prometheus.MustRegister(GetBlockReceiptsDurationMs)
 	prometheus.MustRegister(BlockDelay)
+	prometheus.MustRegister(BlockQueueSize)
 
 	prometheus.MustRegister(ParseBlockDurationMs)
 	prometheus.MustRegister(DbOperationDurationMs)
