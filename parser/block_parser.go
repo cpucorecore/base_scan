@@ -155,7 +155,7 @@ func (p *blockParser) parseBlock(pbc *types.ParseBlockContext) {
 				continue
 			}
 
-			pairWrap := p.getPairByEvent(event)
+			pairWrap := p.getPairByEvent(event) // TODO parallel
 			if pairWrap.Pair.Filtered {
 				continue
 			}
