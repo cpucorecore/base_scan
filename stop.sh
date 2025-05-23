@@ -1,0 +1,1 @@
+killall base_scan
