@@ -34,7 +34,6 @@ type blockParser struct {
 	topicRouter  TopicRouter
 	kafkaSender  service.KafkaSender
 	dbService    service.DBService
-	kafkaOn      bool
 }
 
 func NewBlockParser(
@@ -45,7 +44,6 @@ func NewBlockParser(
 	topicRouter TopicRouter,
 	kafkaSender service.KafkaSender,
 	dbService service.DBService,
-	kafkaOn bool,
 ) BlockParser {
 	workPool, err := ants.NewPool(config.G.BlockHandler.PoolSize)
 	if err != nil {
@@ -63,7 +61,6 @@ func NewBlockParser(
 		topicRouter:  topicRouter,
 		kafkaSender:  kafkaSender,
 		dbService:    dbService,
-		kafkaOn:      kafkaOn,
 	}
 }
 
@@ -199,44 +196,42 @@ func (p *blockParser) getPairByEvent(event types.Event) *types.PairWrap {
 }
 
 func (p *blockParser) commitBlockResult(blockResult *types.BlockResult) {
-	err := p.kafkaSender.Send(blockResult.GetKafkaMessage())
+	blockInfo := blockResult.GetKafkaMessage()
+
+	now := time.Now()
+	err := p.dbService.AddTokens(blockInfo.NewTokens)
+	if err != nil {
+		log.Logger.Fatal("add tokens err", zap.Any("height", blockInfo.Height), zap.Error(err))
+	}
+
+	err = p.dbService.AddPairs(blockInfo.NewPairs)
+	if err != nil {
+		log.Logger.Fatal("add pairs err", zap.Any("height", blockInfo.Height), zap.Error(err))
+	}
+
+	err = p.dbService.AddTxs(blockInfo.Txs)
+	if err != nil {
+		log.Logger.Fatal("add txs err", zap.Any("height", blockInfo.Height), zap.Error(err))
+	}
+
+	duration := time.Since(now)
+	metrics.DbOperationDurationMs.Observe(float64(duration.Milliseconds()))
+	log.Logger.Info("db operation duration",
+		zap.Uint64("block", blockResult.Height),
+		zap.Float64("duration", duration.Seconds()),
+		zap.String("price", blockInfo.NativeTokenPrice),
+		zap.Int("new tokens", len(blockInfo.NewTokens)),
+		zap.Int("new pairs", len(blockInfo.NewPairs)),
+		zap.Int("txs", len(blockInfo.Txs)))
+
+	err = p.kafkaSender.Send(blockInfo)
 	if err != nil {
 		log.Logger.Fatal("kafka send msg err", zap.Error(err), zap.Any("block", blockResult.Height))
 	}
 
 	p.cache.SetFinishedBlock(blockResult.Height)
 	metrics.CurrentHeight.Set(float64(blockResult.Height))
-}
-
-func (p *blockParser) commitBlockResultOld(blockResult *types.BlockResult) {
-	msg, tokens, pairs := blockResult.GetOldKafkaMessageAndNewTokensPairs()
-
-	now := time.Now()
-	p.dbService.AddTokens(tokens)
-	p.dbService.AddPairs(pairs)
-	if !p.kafkaOn {
-		p.dbService.AddTxs(msg.Txs)
-	}
-	duration := time.Since(now)
-	metrics.DbOperationDurationMs.Observe(float64(duration.Milliseconds()))
-	log.Logger.Info("db operation duration",
-		zap.Uint64("block", blockResult.Height),
-		zap.Float64("duration", duration.Seconds()),
-		zap.String("price", msg.BnbPrice),
-		zap.Int("tokens", len(tokens)),
-		zap.Int("pairs", len(pairs)),
-		zap.Int("txs", len(msg.Txs)))
-
-	if p.kafkaOn {
-		err := p.kafkaSender.SendOld(msg)
-		if err != nil {
-			log.Logger.Fatal("kafka send msg err", zap.Error(err), zap.Any("block", blockResult.Height))
-		}
-	}
-
-	p.cache.SetFinishedBlock(blockResult.Height)
-	metrics.CurrentHeight.Set(float64(blockResult.Height))
-	metrics.TxCntByBlock.Set(float64(len(msg.Txs)))
+	metrics.TxCntByBlock.Set(float64(len(blockInfo.Txs)))
 }
 
 func (p *blockParser) startHandleBlockResult(wg *sync.WaitGroup) {
@@ -249,7 +244,7 @@ func (p *blockParser) startHandleBlockResult(wg *sync.WaitGroup) {
 				return
 			}
 
-			p.commitBlockResultOld(blockContext.BlockResult)
+			p.commitBlockResult(blockContext.BlockResult)
 		}
 	}()
 }

@@ -130,10 +130,10 @@ func (br *BlockResult) GetKafkaMessage() *BlockInfo {
 	poolUpdatesMerged := mergePoolUpdates(poolUpdates)
 	poolUpdateParametersMerged := mergePoolUpdateParameters(poolUpdateParameters)
 
-	ethBlock := &BlockInfo{
-		BlockNumber:          br.Height,
-		BlockUnixTimestamp:   br.Timestamp,
-		BnbPrice:             br.NativeTokenPrice.String(),
+	block := &BlockInfo{
+		Height:               br.Height,
+		Timestamp:            br.Timestamp,
+		NativeTokenPrice:     br.NativeTokenPrice.String(),
 		Txs:                  txs,
 		NewTokens:            ormTokens,
 		NewPairs:             ormPairs,
@@ -141,7 +141,7 @@ func (br *BlockResult) GetKafkaMessage() *BlockInfo {
 		PoolUpdateParameters: poolUpdateParametersMerged,
 	}
 
-	return ethBlock
+	return block
 }
 
 func (br *BlockResult) GetOldKafkaMessageAndNewTokensPairs() (*BlockInfoOld, []*orm.Token, []*orm.Pair) {

@@ -24,6 +24,39 @@ import (
 	"time"
 )
 
+func createDBService() service.DBService {
+	var (
+		txDb            *gorm.DB
+		txDbErr         error
+		tokenPairDb     *gorm.DB
+		tokenPairDbErr  error
+		tokenRepository *repository.TokenRepository
+		pairRepository  *repository.PairRepository
+		txRepository    *repository.TxRepository
+	)
+
+	if config.G.TxDatabase.Enabled {
+		txDb, txDbErr = gorm.Open(postgres.Open(config.G.TxDatabase.DBDatasource.GetPostgresDsn()))
+		if txDbErr != nil {
+			log.Logger.Fatal("failed to connect to tx db", zap.Error(txDbErr))
+		}
+
+		txRepository = repository.NewTxRepository(txDb)
+	}
+
+	if config.G.TokenPairDatabase.Enabled {
+		tokenPairDb, tokenPairDbErr = gorm.Open(postgres.Open(config.G.TokenPairDatabase.DBDatasource.GetPostgresDsn()))
+		if tokenPairDbErr != nil {
+			log.Logger.Fatal("failed to connect to token_pair db", zap.Error(tokenPairDbErr))
+		}
+
+		tokenRepository = repository.NewTokenRepository(tokenPairDb)
+		pairRepository = repository.NewPairRepository(tokenPairDb)
+	}
+
+	return service.NewDBService(tokenRepository, pairRepository, txRepository)
+}
+
 func main() {
 	time.Local = time.UTC
 
@@ -78,19 +111,6 @@ func main() {
 	topicRouter := parser.NewTopicRouter()
 	kafkaSender := service.NewKafkaSender(config.G.Kafka)
 
-	txDb, txDbErr := gorm.Open(postgres.Open(config.G.DbTx.GetDsn()))
-	if txDbErr != nil {
-		log.Logger.Fatal("failed to connect to db", zap.Error(txDbErr))
-	}
-	tokenPairDb, tokenPairDbErr := gorm.Open(postgres.Open(config.G.DbTokenPair.GetDsn()))
-	if tokenPairDbErr != nil {
-		log.Logger.Fatal("failed to connect to db", zap.Error(tokenPairDbErr))
-	}
-
-	tokenRepository := repository.NewTokenRepository(tokenPairDb)
-	pairRepository := repository.NewPairRepository(tokenPairDb)
-	txRepository := repository.NewTxRepository(txDb)
-	dbService := service.NewDBService(tokenRepository, pairRepository, txRepository)
 	blockParser := parser.NewBlockParser(
 		cache,
 		blockSequencerForBlockHandler,
@@ -98,8 +118,7 @@ func main() {
 		pairService,
 		topicRouter,
 		kafkaSender,
-		dbService,
-		config.G.Kafka.On,
+		createDBService(),
 	)
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

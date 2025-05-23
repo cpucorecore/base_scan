@@ -53,9 +53,9 @@ func (rc *RetryConf) GetRetryParams() *RetryParams {
 }
 
 type RetryParams struct {
-	Attempts retry.Option
-	Delay    retry.Option
-	Timeout  time.Duration
+	Attempts retry.Option  `json:"attempts"`
+	Delay    retry.Option  `json:"delay"`
+	Timeout  time.Duration `json:"timeout"`
 }
 
 type PriceServiceConf struct {
@@ -63,43 +63,48 @@ type PriceServiceConf struct {
 }
 
 type KafkaConf struct {
-	On                bool
-	Brokers           []string
-	Topic             string
-	SendTimeoutByMs   int
-	MaxRetry          int
-	RetryIntervalByMs int
+	Enabled           bool     `json:"enabled"`
+	Brokers           []string `json:"brokers"`
+	Topic             string   `json:"topic"`
+	SendTimeoutByMs   int      `json:"send_timeout_by_ms"`
+	MaxRetry          int      `json:"max_retry"`
+	RetryIntervalByMs int      `json:"retry_interval_by_ms"`
 }
 
 type ContractCallerConf struct {
-	Retry *RetryConf
+	Retry *RetryConf `json:"retry"`
 }
 
-type DbConf struct {
+type DBDatasourceConf struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Db       string `json:"db"`
+	DBName   string `json:"db_name"`
 }
 
-func (dc *DbConf) GetDsn() string {
+func (c *DBDatasourceConf) GetPostgresDsn() string {
 	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable",
-		dc.Host, dc.Username, dc.Password, dc.Db, dc.Port)
+		c.Host, c.Username, c.Password, c.DBName, c.Port)
+}
+
+type DBConf struct {
+	Enabled      bool              `json:"enabled"`
+	DBDatasource *DBDatasourceConf `json:"db_datasource"`
 }
 
 type Config struct {
-	Log             *LogConf            `json:"log"`
-	Chain           *ChainConf          `json:"chain"`
-	Redis           *RedisConf          `json:"redis"`
-	BlockGetter     *BlockGetterConf    `json:"block_getter"`
-	BlockHandler    *BlockHandlerConf   `json:"block_handler"`
-	EnableSequencer bool                `json:"enable_sequencer"`
-	PriceService    *PriceServiceConf   `json:"price_service"`
-	Kafka           *KafkaConf          `json:"kafka"`
-	ContractCaller  *ContractCallerConf `json:"contract_caller"`
-	DbTx            *DbConf             `json:"db_tx"`
-	DbTokenPair     *DbConf             `json:"db_token_pair"`
+	Log               *LogConf            `json:"log"`
+	Chain             *ChainConf          `json:"chain"`
+	Redis             *RedisConf          `json:"redis"`
+	BlockGetter       *BlockGetterConf    `json:"block_getter"`
+	BlockHandler      *BlockHandlerConf   `json:"block_handler"`
+	EnableSequencer   bool                `json:"enable_sequencer"`
+	PriceService      *PriceServiceConf   `json:"price_service"`
+	Kafka             *KafkaConf          `json:"kafka"`
+	ContractCaller    *ContractCallerConf `json:"contract_caller"`
+	TxDatabase        *DBConf             `json:"tx_database"`
+	TokenPairDatabase *DBConf             `json:"token_pair_database"`
 }
 
 var (
@@ -138,7 +143,7 @@ var (
 			PoolSize: 1,
 		},
 		Kafka: &KafkaConf{
-			On:                false,
+			Enabled:           false,
 			Brokers:           []string{"localhost:9092"},
 			Topic:             "block",
 			SendTimeoutByMs:   5000,
@@ -152,19 +157,25 @@ var (
 				TimeoutMs: 3000,
 			},
 		},
-		DbTx: &DbConf{
-			Host:     "localhost",
-			Port:     5432,
-			Username: "postgres",
-			Password: "postgres",
-			Db:       "test",
+		TxDatabase: &DBConf{
+			Enabled: false,
+			DBDatasource: &DBDatasourceConf{
+				Host:     "localhost",
+				Port:     5432,
+				Username: "postgres",
+				Password: "postgres",
+				DBName:   "test",
+			},
 		},
-		DbTokenPair: &DbConf{
-			Host:     "localhost",
-			Port:     5432,
-			Username: "postgres",
-			Password: "postgres",
-			Db:       "test",
+		TokenPairDatabase: &DBConf{
+			Enabled: false,
+			DBDatasource: &DBDatasourceConf{
+				Host:     "localhost",
+				Port:     5432,
+				Username: "postgres",
+				Password: "postgres",
+				DBName:   "test",
+			},
 		},
 	}
 

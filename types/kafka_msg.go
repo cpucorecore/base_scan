@@ -5,9 +5,9 @@ import (
 )
 
 type BlockInfo struct {
-	BlockNumber          uint64
-	BlockUnixTimestamp   uint64
-	BnbPrice             string
+	Height               uint64
+	Timestamp            uint64
+	NativeTokenPrice     string
 	Txs                  []*orm.Tx
 	NewTokens            []*orm.Token
 	NewPairs             []*orm.Pair

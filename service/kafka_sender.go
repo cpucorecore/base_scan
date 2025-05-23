@@ -14,7 +14,6 @@ import (
 
 type KafkaSender interface {
 	Send(block *types.BlockInfo) error
-	SendOld(block *types.BlockInfoOld) error
 }
 
 type kafkaSender struct {
@@ -48,12 +47,12 @@ func NewKafkaSender(conf *config.KafkaConf) KafkaSender {
 	return client
 }
 
-func (c *kafkaSender) Close() {
-	_ = c.asyncProducer.Close()
+func (s *kafkaSender) Close() {
+	_ = s.asyncProducer.Close()
 }
 
-func (c *kafkaSender) processErrors() {
-	errCh := c.asyncProducer.Errors()
+func (s *kafkaSender) processErrors() {
+	errCh := s.asyncProducer.Errors()
 	go func() {
 		for {
 			err, ok := <-errCh
@@ -66,31 +65,19 @@ func (c *kafkaSender) processErrors() {
 	}()
 }
 
-func (c *kafkaSender) Send(block *types.BlockInfo) error {
+func (s *kafkaSender) Send(block *types.BlockInfo) error {
+	if !s.conf.Enabled {
+		return nil
+	}
+
 	data, err := json.Marshal(block)
 	if err != nil {
 		return fmt.Errorf("json.Marshal error: %v, %v", err, block)
 	}
 
 	now := time.Now()
-	c.asyncProducer.Input() <- &sarama.ProducerMessage{
-		Topic: c.conf.Topic,
-		Value: sarama.ByteEncoder(data),
-	}
-	metrics.SendBlockKafkaDurationMs.Observe(float64(time.Since(now).Milliseconds()))
-
-	return nil
-}
-
-func (c *kafkaSender) SendOld(block *types.BlockInfoOld) error {
-	data, err := json.Marshal(block)
-	if err != nil {
-		return fmt.Errorf("json.Marshal error: %v, %v", err, block)
-	}
-
-	now := time.Now()
-	c.asyncProducer.Input() <- &sarama.ProducerMessage{
-		Topic: c.conf.Topic,
+	s.asyncProducer.Input() <- &sarama.ProducerMessage{
+		Topic: s.conf.Topic,
 		Value: sarama.ByteEncoder(data),
 	}
 	metrics.SendBlockKafkaDurationMs.Observe(float64(time.Since(now).Milliseconds()))
