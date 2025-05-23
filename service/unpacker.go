@@ -4,8 +4,8 @@ import (
 	"base_scan/abi/aerodrome"
 	"base_scan/abi/bep20"
 	"base_scan/abi/ds_token"
-	v2 "base_scan/abi/uniswap/v2"
-	v3 "base_scan/abi/uniswap/v3"
+	uniswapv2 "base_scan/abi/uniswap/v2"
+	uniswapv3 "base_scan/abi/uniswap/v3"
 	"base_scan/types"
 	"bytes"
 	"errors"
@@ -40,8 +40,8 @@ var (
 )
 
 func (u *unpacker) Unpack(method string, data []byte, length int) ([]interface{}, error) {
-	for _, abi := range u.abis {
-		values, err := abi.Unpack(method, data)
+	for _, abi_ := range u.abis {
+		values, err := abi_.Unpack(method, data)
 		if err == nil && len(values) == length {
 			return values, nil
 		}
@@ -55,23 +55,23 @@ var (
 		ds_token.Abi,
 	})
 
-	PancakeV2Unpacker = NewUnpacker([]*abi.ABI{
-		v2.PairAbi,
+	UniswapV2PairUnpacker = NewUnpacker([]*abi.ABI{
+		uniswapv2.PairAbi,
 	})
 
-	PancakeV3Unpacker = NewUnpacker([]*abi.ABI{
-		v3.PoolAbi,
+	UniswapV3PoolUnpacker = NewUnpacker([]*abi.ABI{
+		uniswapv3.PoolAbi,
 	})
 
-	PancakeV2FactoryUnpacker = NewUnpacker([]*abi.ABI{
-		v2.FactoryAbi,
+	UniswapV2FactoryUnpacker = NewUnpacker([]*abi.ABI{
+		uniswapv2.FactoryAbi,
 	})
 
-	PancakeV3FactoryUnpacker = NewUnpacker([]*abi.ABI{
-		v3.FactoryAbi,
+	UniswapV3FactoryUnpacker = NewUnpacker([]*abi.ABI{
+		uniswapv3.FactoryAbi,
 	})
 
-	AerodromeV2FactoryUnpacker = NewUnpacker([]*abi.ABI{
+	AerodromeFactoryUnpacker = NewUnpacker([]*abi.ABI{
 		aerodrome.FactoryAbi,
 	})
 
@@ -80,10 +80,10 @@ var (
 		"symbol":      TokenUnpacker,
 		"decimals":    TokenUnpacker,
 		"totalSupply": TokenUnpacker,
-		"token0":      PancakeV2Unpacker,
-		"token1":      PancakeV2Unpacker,
-		"getReserves": PancakeV2Unpacker,
-		"fee":         PancakeV3Unpacker,
+		"token0":      UniswapV2PairUnpacker,
+		"token1":      UniswapV2PairUnpacker,
+		"getReserves": UniswapV2PairUnpacker,
+		"fee":         UniswapV3PoolUnpacker,
 	}
 )
 

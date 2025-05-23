@@ -2,8 +2,9 @@ package service
 
 import (
 	"base_scan/abi/bep20"
-	v2 "base_scan/abi/uniswap/v2"
-	v3 "base_scan/abi/uniswap/v3"
+	uniswapv2 "base_scan/abi/uniswap/v2"
+	uniswapv3 "base_scan/abi/uniswap/v3"
+	"encoding/hex"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -13,6 +14,14 @@ type CallContractReq struct {
 	BlockNumber *big.Int
 	Address     *common.Address
 	Data        []byte
+}
+
+func (r *CallContractReq) String() string {
+	return "CallContractReq{" +
+		"BlockNumber=" + r.BlockNumber.String() +
+		", Address=" + r.Address.String() +
+		", Data=" + hex.EncodeToString(r.Data) +
+		"}"
 }
 
 func BuildCallContractReqDynamic(blockNumber *big.Int, address *common.Address, abi *abi.ABI, name string, args ...interface{}) *CallContractReq {
@@ -29,7 +38,7 @@ func BuildCallContractReqDynamic(blockNumber *big.Int, address *common.Address, 
 }
 
 var (
-	AbiNamesPairs = []struct {
+	AbiNames = []struct {
 		Abi   *abi.ABI
 		Names []string
 	}{
@@ -38,11 +47,11 @@ var (
 			Names: []string{"name", "symbol", "decimals", "totalSupply"},
 		},
 		{
-			Abi:   v2.PairAbi,
+			Abi:   uniswapv2.PairAbi,
 			Names: []string{"token0", "token1"},
 		},
 		{
-			Abi:   v3.PoolAbi,
+			Abi:   uniswapv3.PoolAbi,
 			Names: []string{"fee"},
 		},
 	}
@@ -52,7 +61,7 @@ var (
 
 func init() {
 	Name2Data = make(map[string][]byte)
-	for _, abiName := range AbiNamesPairs {
+	for _, abiName := range AbiNames {
 		for _, name := range abiName.Names {
 			data, err := abiName.Abi.Pack(name)
 			if err != nil {

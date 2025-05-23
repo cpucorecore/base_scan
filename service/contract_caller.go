@@ -2,10 +2,9 @@ package service
 
 import (
 	"base_scan/abi/aerodrome"
-	v2 "base_scan/abi/uniswap/v2"
-	v3 "base_scan/abi/uniswap/v3"
+	uniswapv2 "base_scan/abi/uniswap/v2"
+	uniswapv3 "base_scan/abi/uniswap/v3"
 	"base_scan/config"
-	"base_scan/log"
 	"base_scan/metrics"
 	"base_scan/types"
 	"context"
@@ -14,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"go.uber.org/zap"
 	"math/big"
 	"strings"
 	"time"
@@ -66,12 +64,12 @@ func (c *ContractCaller) callContract(req *CallContractReq) ([]byte, error) {
 	if err != nil {
 		if IsRetryableErr(err) {
 			metrics.CallContractErrors.WithLabelValues("true").Inc()
-			log.Logger.Info("Err: call contract encounter retryable err", zap.Error(err), zap.Any("req", req))
+			//log.Logger.Info("Err: call contract encounter retryable err", zap.Error(err), zap.Any("req", req))
 			return nil, err
 		}
 
 		metrics.CallContractErrors.WithLabelValues("false").Inc()
-		log.Logger.Info("Err: call contract encounter no retryable err", zap.Error(err), zap.Any("req", req))
+		//log.Logger.Info("Err: call contract encounter no retryable err", zap.Error(err), zap.Any("req", req))
 		return nil, nil
 	}
 
@@ -176,7 +174,7 @@ CallGetPair
 for uniswap/pancake v2
 */
 func (c *ContractCaller) CallGetPair(factoryAddress, token0Address, token1Address *common.Address) (common.Address, error) {
-	req := BuildCallContractReqDynamic(nil, factoryAddress, v2.FactoryAbi, "getPair", token0Address, token1Address)
+	req := BuildCallContractReqDynamic(nil, factoryAddress, uniswapv2.FactoryAbi, "getPair", token0Address, token1Address)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
@@ -187,7 +185,7 @@ func (c *ContractCaller) CallGetPair(factoryAddress, token0Address, token1Addres
 		return types.ZeroAddress, ErrOutputEmpty
 	}
 
-	values, unpackErr := PancakeV2FactoryUnpacker.Unpack("getPair", bytes, 1)
+	values, unpackErr := UniswapV2FactoryUnpacker.Unpack("getPair", bytes, 1)
 	if unpackErr != nil {
 		return types.ZeroAddress, unpackErr
 	}
@@ -212,7 +210,7 @@ CallGetPool
 for uniswap/pancake v3
 */
 func (c *ContractCaller) CallGetPool(factoryAddress, token0Address, token1Address *common.Address, fee *big.Int) (common.Address, error) {
-	req := BuildCallContractReqDynamic(nil, factoryAddress, v3.FactoryAbi, "getPool", token0Address, token1Address, fee)
+	req := BuildCallContractReqDynamic(nil, factoryAddress, uniswapv3.FactoryAbi, "getPool", token0Address, token1Address, fee)
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
@@ -223,7 +221,7 @@ func (c *ContractCaller) CallGetPool(factoryAddress, token0Address, token1Addres
 		return types.ZeroAddress, ErrOutputEmpty
 	}
 
-	values, unpackErr := PancakeV3FactoryUnpacker.Unpack("getPool", bytes, 1)
+	values, unpackErr := UniswapV3FactoryUnpacker.Unpack("getPool", bytes, 1)
 	if unpackErr != nil {
 		return types.ZeroAddress, unpackErr
 	}
@@ -251,7 +249,7 @@ func (c *ContractCaller) CallIsPool(poolAddress *common.Address) (bool, error) {
 		return false, ErrOutputEmpty
 	}
 
-	values, unpackErr := AerodromeV2FactoryUnpacker.Unpack("isPool", bytes, 1)
+	values, unpackErr := AerodromeFactoryUnpacker.Unpack("isPool", bytes, 1)
 	if unpackErr != nil {
 		return false, unpackErr
 	}
@@ -268,7 +266,7 @@ callGetReserves
 for uniswap/pancake v2
 */
 func (c *ContractCaller) callGetReserves(blockNumber *big.Int) ([]interface{}, error) {
-	req := BuildCallContractReqDynamic(blockNumber, &types.WETHUSDCPairAddressUniswapV2, v2.PairAbi, "getReserves")
+	req := BuildCallContractReqDynamic(blockNumber, &types.WETHUSDCPairAddressUniswapV2, uniswapv2.PairAbi, "getReserves")
 
 	bytes, err := c.CallContract(req)
 	if err != nil {
@@ -279,7 +277,7 @@ func (c *ContractCaller) callGetReserves(blockNumber *big.Int) ([]interface{}, e
 		return nil, ErrOutputEmpty
 	}
 
-	values, unpackErr := PancakeV2Unpacker.Unpack("getReserves", bytes, 3)
+	values, unpackErr := UniswapV2PairUnpacker.Unpack("getReserves", bytes, 3)
 	if unpackErr != nil {
 		return nil, unpackErr
 	}
