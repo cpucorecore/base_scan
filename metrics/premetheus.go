@@ -84,15 +84,15 @@ var (
 		Objectives: defaultObjectives,
 	})
 
+	CallContractErrors = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "call_contract_errors_total",
+		},
+		[]string{"is_retryable"},
+	)
+
 	GetPairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "get_pair_duration_ms",
-		MaxAge:     defaultMaxAge,
-		AgeBuckets: defaultAgeBuckets,
-		Objectives: defaultObjectives,
-	})
-
-	VerifyPairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "verify_pair_duration_ms",
 		MaxAge:     defaultMaxAge,
 		AgeBuckets: defaultAgeBuckets,
 		Objectives: defaultObjectives,
@@ -105,11 +105,25 @@ var (
 		Objectives: defaultObjectives,
 	})
 
-	CallContractErrors = prometheus.NewCounterVec(
+	VerifyPairDurationMs = prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "verify_pair_duration_ms",
+		MaxAge:     defaultMaxAge,
+		AgeBuckets: defaultAgeBuckets,
+		Objectives: defaultObjectives,
+	})
+
+	VerifyPairTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "call_contract_errors_total",
+			Name: "verify_pair_total",
 		},
-		[]string{"is_retryable"},
+		[]string{"result"},
+	)
+
+	VerifyPairOkByProtocol = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "verify_pair_ok_by_protocol_total",
+		},
+		[]string{"protocol"},
 	)
 )
 
@@ -128,11 +142,13 @@ func init() {
 
 	prometheus.MustRegister(CallContractDurationMs)
 	prometheus.MustRegister(CallContractArchiveDurationMs)
+	prometheus.MustRegister(CallContractErrors)
 	prometheus.MustRegister(GetPairDurationMs)
-	prometheus.MustRegister(VerifyPairDurationMs)
 	prometheus.MustRegister(GetTokenDurationMs)
 
-	prometheus.MustRegister(CallContractErrors)
+	prometheus.MustRegister(VerifyPairDurationMs)
+	prometheus.MustRegister(VerifyPairTotal)
+	prometheus.MustRegister(VerifyPairOkByProtocol)
 }
 
 func init() {

@@ -328,31 +328,44 @@ func (s *pairService) verifyPairV3(pairFactoryAddress common.Address, pair *type
 	return types.IsSameAddress(pairAddressQueried, pair.Address)
 }
 
-func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
+func (s *pairService) verifyPair(pair *types.Pair, possibleProtocolIds []int) bool {
 	now := time.Now()
-	for _, protocolId := range protocolIds {
+	defer func() {
+		duration := float64(time.Since(now).Milliseconds())
+		metrics.VerifyPairDurationMs.Observe(duration)
+	}()
+
+	for _, protocolId := range possibleProtocolIds {
 		switch protocolId {
 		case types.ProtocolIdUniswapV2:
 			if s.verifyPairV2(uniswapv2.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
+				metrics.VerifyPairTotal.WithLabelValues("success").Inc()
+				metrics.VerifyPairOkByProtocol.WithLabelValues("uniswap_v2").Inc()
 				return true
 			}
 
 		case types.ProtocolIdPancakeV2:
 			if s.verifyPairV2(pancakev2.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
+				metrics.VerifyPairTotal.WithLabelValues("success").Inc()
+				metrics.VerifyPairOkByProtocol.WithLabelValues("pancake_v2").Inc()
 				return true
 			}
 
 		case types.ProtocolIdUniswapV3:
 			if s.verifyPairV3(uniswapv3.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
+				metrics.VerifyPairTotal.WithLabelValues("success").Inc()
+				metrics.VerifyPairOkByProtocol.WithLabelValues("uniswap_v3").Inc()
 				return true
 			}
 
 		case types.ProtocolIdPancakeV3:
 			if s.verifyPairV3(pancakev3.FactoryAddress, pair) {
 				pair.ProtocolId = protocolId
+				metrics.VerifyPairTotal.WithLabelValues("success").Inc()
+				metrics.VerifyPairOkByProtocol.WithLabelValues("pancake_v3").Inc()
 				return true
 			}
 
@@ -364,6 +377,8 @@ func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
 
 			if isPool {
 				pair.ProtocolId = protocolId
+				metrics.VerifyPairTotal.WithLabelValues("success").Inc()
+				metrics.VerifyPairOkByProtocol.WithLabelValues("aerodrome").Inc()
 				return true
 			}
 		}
@@ -371,7 +386,7 @@ func (s *pairService) verifyPair(pair *types.Pair, protocolIds []int) bool {
 
 	pair.Filtered = true
 	pair.FilterCode = types.FilterCodeVerifyFailed
+	metrics.VerifyPairTotal.WithLabelValues("failed").Inc()
 
-	metrics.VerifyPairDurationMs.Observe(float64(time.Since(now).Milliseconds()))
 	return false
 }
